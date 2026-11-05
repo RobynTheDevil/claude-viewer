@@ -57,7 +57,7 @@ record kind the parser handles.
 | Command | `claude-viewer` |
 | Opening | No argument: a picker of the current directory's project sessions, like `/resume`; `--all` lists every project. A session ID, ID prefix or `.jsonl` path opens that session. |
 | Default view | Prompts and replies in full, each tool call on one line with its output collapsed, file-edit diffs open. |
-| Similar calls | Calls to the same tool: every Bash, every Read, every Edit. `e`/`c` act on them together. |
+| Similar calls | Calls to the same tool: every Bash, every Read, every Edit. `O`/`X` act on them together. |
 | Shown collapsed | Thinking blocks, attachments (one line with the file name), per-message token usage and model. |
 | Not shown | System reminders, `isMeta` text, subagent turns. |
 
@@ -76,7 +76,8 @@ Keys, vim style. Arrow keys work as `h`/`j`/`k`/`l`.
 | `gg`/`G` | top and bottom; Home and End too |
 | `gf` | open a Read, Edit or Write's file in the editor at the line it touched |
 | Enter, click | toggle the block |
-| `e`/`c` | expand or collapse every call to the cursor block's tool |
+| `o`/`x` | expand or collapse the block |
+| `O`/`X` | expand or collapse every block of the cursor block's kind, or every call to its tool |
 | `E`/`C` | expand or collapse every block |
 | `f` | cycle the filter: all, read-only, changes |
 | `u` | show or hide token usage lines |
@@ -86,12 +87,12 @@ Keys, vim style. Arrow keys work as `h`/`j`/`k`/`l`.
 | Esc | leave visual mode, else clear the match highlights, else back |
 | `q` | back, or quit |
 
-**The caret is the cursor.** Normal mode always shows a caret, a line and a character
-index into that line's strip. The block cursor is the block holding it, so the status line,
-Enter and `e`/`c` act on that block. A scroll by `ctrl+e`, page or wheel that would take the
-caret off screen moves it to the nearest visible line. A block motion, a toggle or a filter
-change puts the caret on the cursor block's first line. The caret and the selection are
-drawn per line in `render_line`.
+**The caret is the cursor.** Normal mode always shows a caret, a line and a character index into
+that line's strip. The block cursor is the block holding it, so the status line, Enter, `o`/`x`
+and `O`/`X` act on that block. A scroll by `ctrl+e`, page or wheel that would take the caret off
+screen moves it to the nearest visible line. A block motion, a toggle or a filter change puts
+the caret on the cursor block's first line. The caret and the selection are drawn per line in
+`render_line`.
 
 `y` copies the selection as drawn, a wrapped line as its own line, without the gutter or
 the `⏺ ` and `  ⎿  ` markers and with trailing spaces removed. Rendered Markdown copies
@@ -104,7 +105,7 @@ by anything else, or by nothing for 1 s, does nothing.
 
 **Hidden blocks take no lines.** The filter and the usage toggle set `TranscriptView.shown`;
 a hidden block's strips are empty, so `bisect_right` over the offsets lands on the visible
-block after a run of hidden ones. Motions, search and `e`/`c`/`E`/`C` skip hidden blocks, and
+block after a run of hidden ones. Motions, search and `O`/`X`/`E`/`C` skip hidden blocks, and
 the blank line after a block depends on the next shown one, so a change of visibility clears
 the whole cache. A call is a change when its result has a `structuredPatch`; every other call
 is read-only, Bash included, whatever it ran. Prompts and replies show under every filter,

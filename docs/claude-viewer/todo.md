@@ -16,7 +16,8 @@ an item, and the claim moves to `x` on their word.
 Each open defect has a report in [issues/](issues/) carrying the reproduction, the root
 cause and the candidate fixes. This list is the status; the report is the record.
 
-None open.
+- `o`/`x` expand and collapse the block, `O`/`X` its tool or kind. Enter still toggles.
+    - Test: `o` twice leaves a block open, `X` on a Bash call collapses every Bash.
 
 ## enhancements:
 

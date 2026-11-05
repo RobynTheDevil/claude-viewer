@@ -78,7 +78,7 @@ def test_view_toggles_and_groups(transcript):
             assert view.virtual_size.height > before
             await pilot.press("C")
             assert all(b.collapsed for b in blocks if b.collapsible)
-            await pilot.press("right_curly_bracket", "right_curly_bracket", "e")
+            await pilot.press("right_curly_bracket", "right_curly_bracket", "O")
             assert not blocks[5].collapsed and blocks[3].collapsed
             await pilot.press("slash", *"widget", "enter")
             assert "widget" in (blocks[view.cursor].text + str(blocks[view.cursor].input)).lower()
@@ -421,3 +421,26 @@ def test_caret_through_multiline_prompt(tmp_path):
         assert view.mode == "visual"
 
     run_view(path, script)
+
+
+
+def test_open_and_close_blocks(transcript):
+    async def script(app, view, pilot):
+        blocks = view.blocks
+        bash = [i for i, b in enumerate(blocks) if b.tool == "Bash"][0]
+        view.action_jump(bash)
+        await pilot.press("o")
+        assert not blocks[bash].collapsed
+        await pilot.press("o")
+        assert not blocks[bash].collapsed
+        await pilot.press("x")
+        assert blocks[bash].collapsed
+        await pilot.press("x")
+        assert blocks[bash].collapsed
+        thinking = [i for i, b in enumerate(blocks) if b.kind == "thinking"][0]
+        view.action_jump(thinking)
+        await pilot.press("O")
+        assert not blocks[thinking].collapsed and blocks[bash].collapsed
+        await pilot.press("X")
+        assert blocks[thinking].collapsed
+    run_view(transcript, script, size=(100, 30))

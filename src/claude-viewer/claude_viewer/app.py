@@ -102,8 +102,10 @@ class TranscriptView(ScrollView, can_focus=True):
         Binding("home", "jump(0)", "Top", show=False),
         Binding("G,end", "jump(-1)", "Bottom", show=False),
         Binding("enter,space", "toggle", "Toggle"),
-        Binding("e", "group(False)", "Expand tool"),
-        Binding("c", "group(True)", "Collapse tool"),
+        Binding("o", "block(False)", "Expand"),
+        Binding("x", "block(True)", "Collapse"),
+        Binding("O", "group(False)", "Expand tool"),
+        Binding("X", "group(True)", "Collapse tool"),
         Binding("E", "every(False)", "Expand all"),
         Binding("C", "every(True)", "Collapse all"),
         Binding("f", "cycle_filter", "Filter"),
@@ -561,6 +563,10 @@ class TranscriptView(ScrollView, can_focus=True):
             block = self.blocks[self.cursor]
             self._set_collapsed([self.cursor], not block.collapsed)
 
+    def action_block(self, collapsed: bool) -> None:
+        if self.blocks:
+            self._set_collapsed([self.cursor], collapsed)
+
     def action_group(self, collapsed: bool) -> None:
         if self.blocks:
             group = self.blocks[self.cursor].group
@@ -687,7 +693,7 @@ class SessionScreen(Screen):
                 text += f" {view.filter}"
             if self.message:
                 text += f"  {self.message}"
-            text += f"  ·  enter toggle  e/c {group}  f filter  u usage  - outline  / find  q back"
+            text += f"  ·  enter toggle  o/x block  O/X {group}  f filter  u usage  - outline  / find  q back"
         self.query_one("#status", Static).update(Text(text))
 
     def action_search(self) -> None:
