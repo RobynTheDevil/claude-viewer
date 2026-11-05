@@ -1,7 +1,16 @@
 from __future__ import annotations
 
+from functools import lru_cache
+from pathlib import PurePath
+
+from pygments.lexer import Lexer
+from pygments.lexers import get_lexer_for_filename
+from pygments.lexers.special import TextLexer
+from pygments.util import ClassNotFound
 from rich.console import Console, Group, RenderableType
 from rich.markdown import Markdown
+from rich.style import Style
+from rich.syntax import Syntax
 from rich.table import Table
 from rich.text import Text
 
@@ -16,6 +25,7 @@ ELBOW = "  ⎿  "
 PROMPT_STYLE = "on grey15"
 ADD_STYLE = "on #16351f"
 DEL_STYLE = "on #3d1a1d"
+SYNTAX_THEME = "monokai"
 
 
 def tool_label(block: Block) -> str:
@@ -77,26 +87,103 @@ def marked(marker: str, marker_style: str, body: RenderableType) -> Table:
     return grid
 
 
-def diff(patch: list) -> Text:
+@lru_cache(maxsize=None)
+def _lexer_for_name(name: str) -> Lexer | None:
+    try:
+        lexer = get_lexer_for_filename(name, stripnl=False, ensurenl=True)
+    except ClassNotFound:
+        return None
+    return None if isinstance(lexer, TextLexer) else lexer
+
+
+def lexer_for(path: str) -> Lexer | None:
+    if not path:
+        return None
+    name = PurePath(path.replace("\\", "/")).name
+    suffix = PurePath(name).suffix.lower()
+    return _lexer_for_name(f"x{suffix}" if suffix else name)
+
+
+@lru_cache(maxsize=None)
+def _token_style(token_type) -> Style | None:
+    style = Syntax.get_theme(SYNTAX_THEME).get_style_for_token(token_type)
+    if style.color is None and not style.bold and not style.italic:
+        return None
+    return Style(color=style.color, bold=style.bold or None, italic=style.italic or None)
+
+
+def highlight_lines(lines: list[str], lexer: Lexer | None) -> list[Text]:
+    if lexer is None:
+        return [Text(line) for line in lines]
+    out = [Text()]
+    for token_type, value in lexer.get_tokens("\n".join(lines)):
+        style = _token_style(token_type)
+        for k, part in enumerate(value.split("\n")):
+            if k:
+                out.append(Text())
+            if part:
+                out[-1].append(part, style)
+    if len(out) < len(lines) or any(t.plain != line for t, line in zip(out, lines)):
+        return [Text(line) for line in lines]
+    return out[: len(lines)]
+
+
+def diff_line(prefix: str, body: Text, style: str = "") -> Text:
+    line = Text(prefix)
+    line.append_text(body)
+    if style:
+        line.stylize(style, 0, len(line))
+    return line
+
+
+def diff(patch: list, path: str = "") -> Text:
     out = Text()
     for n, hunk in enumerate(patch):
         if n:
             out.append("     ⋮\n", style="dim")
+        lines = hunk.get("lines", [])
+        old_code = [line[1:] for line in lines if line[:1] != "+"]
+        new_code = [line[1:] for line in lines if line[:1] != "-"]
+        lexer = lexer_for(path)
+        old_hl = iter(highlight_lines(old_code, lexer))
+        new_hl = iter(highlight_lines(new_code, lexer))
         old = hunk.get("oldStart", 0)
         new = hunk.get("newStart", 0)
-        for line in hunk.get("lines", []):
-            sign, body = line[:1], line[1:]
+        for line in lines:
+            sign = line[:1]
             if sign == "+":
-                out.append(f"{new:>5} +{body}\n", style=ADD_STYLE)
+                out.append_text(diff_line(f"{new:>5} +", next(new_hl), ADD_STYLE))
                 new += 1
             elif sign == "-":
-                out.append(f"{old:>5} -{body}\n", style=DEL_STYLE)
+                out.append_text(diff_line(f"{old:>5} -", next(old_hl), DEL_STYLE))
                 old += 1
             else:
-                out.append(f"{new:>5}  {body}\n")
+                next(old_hl)
+                out.append_text(diff_line(f"{new:>5}  ", next(new_hl)))
                 old += 1
                 new += 1
+            out.append("\n")
     out.rstrip()
+    return out
+
+
+def read_body(block: Block) -> Text | None:
+    file = block.file or {}
+    content = file.get("content")
+    if not isinstance(content, str) or block.is_error:
+        return None
+    path = file.get("filePath") or block.input.get("file_path", "")
+    lexer = lexer_for(path)
+    if lexer is None:
+        return None
+    start = file.get("startLine") if isinstance(file.get("startLine"), int) else 1
+    lines = content.rstrip("\n").split("\n")
+    out = Text()
+    for n, line in enumerate(highlight_lines(lines, lexer)):
+        if n:
+            out.append("\n")
+        out.append(f"{start + n:>5}  ", style="dim")
+        out.append_text(line)
     return out
 
 
@@ -124,8 +211,12 @@ def tool_body(block: Block) -> RenderableType:
         summary = Text(f"Updated {path} with {added} addition{'s' * (added != 1)} and {removed} removal{'s' * (removed != 1)}")
         if block.collapsed:
             return marked(ELBOW, "dim", summary)
-        return marked(ELBOW, "dim", Group(summary, diff(block.patch)))
+        return marked(ELBOW, "dim", Group(summary, diff(block.patch, path)))
     lines = block.result.rstrip().splitlines()
+    if not block.collapsed and block.tool == "Read":
+        code = read_body(block)
+        if code is not None:
+            return marked(ELBOW, "dim", code)
     if not block.collapsed:
         return marked(ELBOW, "dim", output("\n".join(lines) or "(no output)", style))
     if block.tool == "Read" and not block.is_error:

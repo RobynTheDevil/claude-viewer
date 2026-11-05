@@ -295,3 +295,42 @@ def test_gf_opens_or_reports(transcript, tmp_path, monkeypatch):
         await pilot.press("g", "f")
         assert view.cursor == 3
     run_view(transcript, script, size=(100, 30))
+
+
+def test_diff_keeps_background_under_syntax_colors():
+    from claude_viewer.render import ADD_STYLE, diff
+    from rich.style import Style
+    text = diff([{"oldStart": 1, "newStart": 1, "lines": ["+import os", " x = 1"]}], "/w/a.py")
+    console = Console(width=60, color_system="truecolor")
+    segments = [s for s in console.render(text) if s.text.strip()]
+    keyword = next(s for s in segments if s.text == "import")
+    assert keyword.style.color is not None
+    assert keyword.style.bgcolor == Style.parse(ADD_STYLE).bgcolor
+    assert text.plain.splitlines() == ["    1 +import os", "    2  x = 1"]
+
+
+def test_read_body_highlights_with_real_line_numbers():
+    from claude_viewer.render import read_body
+    from claude_viewer.transcript import Block
+    file = {"filePath": "/w/a.rs", "content": "fn main() {\n}\n", "startLine": 160}
+    body = read_body(Block("tool", tool="Read", input={"file_path": "/w/a.rs"}, result="x", file=file))
+    assert body.plain.splitlines() == ["  160  fn main() {", "  161  }"]
+    assert any(span.style and getattr(span.style, "color", None) for span in body.spans)
+    plain = dict(file, filePath="/w/notes.unknownext")
+    assert read_body(Block("tool", tool="Read", input={}, result="x", file=plain)) is None
+
+
+def test_parse_keeps_read_file(tmp_path):
+    import json
+    path = tmp_path / "33333333-2222-3333-4444-555555555555.jsonl"
+    records = [
+        {"parentUuid": None, "isSidechain": False, "type": "assistant", "uuid": "a1",
+         "message": {"id": "m1", "role": "assistant", "content": [
+             {"type": "tool_use", "id": "t1", "name": "Read", "input": {"file_path": "/w/a.py"}}]}},
+        {"parentUuid": "a1", "isSidechain": False, "type": "user", "uuid": "u1",
+         "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t1", "content": "1\tx = 1"}]},
+         "toolUseResult": {"type": "text", "file": {"filePath": "/w/a.py", "content": "x = 1", "startLine": 1}}},
+    ]
+    path.write_text("".join(json.dumps(r) + "\n" for r in records))
+    read = parse(path).blocks[0]
+    assert read.file["content"] == "x = 1"

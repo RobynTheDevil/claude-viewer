@@ -40,8 +40,8 @@ breaks if the prefix format changes.
 - `src/claude-viewer/claude_viewer/render.py:80-133` (`diff`, `tool_body`)
 
 ## Open Questions
-- Does a Syntax theme background cover the diff backgrounds? This is untested. Settled by
-  rendering one diff with `background_color` set.
+- Does a Syntax theme background cover the diff backgrounds? Settled: yes. Monokai's
+  token styles each carry `on #272822`, so only the foreground of each token is kept.
 
 ## Priority
 Low

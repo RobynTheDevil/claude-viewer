@@ -17,6 +17,11 @@ Open work is in [todo.md](todo.md).
   wide, and the next resize re-renders every block.
 - **Per-line overlays are drawn in `render_line`, never cached.** Match highlights and the
   gutter go on the strip as it is drawn, so a new query or a cursor move re-renders nothing.
+- **Syntax colors are foreground only.** Pygments themes put their background on every
+  token, which covers the diff's add and remove backgrounds. `highlight_lines` keeps each
+  token's color, bold and italic and nothing else.
+- **Pick a lexer by file name, never by content.** `Syntax.guess_lexer` with code imports
+  every Pygments lexer, 3 s on `/mnt/c`. `lexer_for` looks up the suffix and caches it.
 - **Tool output can hold ANSI escapes.** The terminal view parses them with
   `Text.from_ansi`; the export strips them. Plain `Text(...)` shows them as raw `[33m`.
 - **The transcript is not the conversation.** Filter records as
@@ -30,6 +35,7 @@ All under `src/claude-viewer/claude_viewer/`.
 - `transcript.py`: reads a `.jsonl` into `Block`s, pairs each tool call with its result,
   places a usage block after each message, and finds and lists sessions.
 - `render.py`: one Rich renderable per block, in the `/resume` style. `--print` uses it.
+  Diffs and expanded Reads are colored by the file's language.
 - `app.py`: the Textual app. `PickerScreen` lists sessions; `SessionScreen` holds
   `TranscriptView`, the status line and the find box.
 - `export.py`: Markdown export. Tool output and thinking go in `<details>`, diffs in `diff`
@@ -114,7 +120,9 @@ because speed is not the limit at this data size:
 - Filtering and parsing every local transcript (177 files, largest 37 MB) in Python takes
   0.8 s, measured. Search across sessions is to shell out to `rg`. Move it to Rust only if
   search over a full history passes about 1 s.
-- The largest session (1,068 blocks) opens in 0.8 s and expands fully in 1.2 s, measured.
+- The largest session (1,068 blocks) opens in 1.6 s and expands fully in 2.0 s, measured
+  from the worktree on `/mnt/c`. Of the open, 0.23 s is highlighting its 1,809 diff lines
+  and 0.26 s loading the two lexers.
 - Edit results carry `structuredPatch`, so diffs come from the transcript and are not
   recomputed.
 - `--print` writes the default view through Rich alone, for pipes and `less -R`.
