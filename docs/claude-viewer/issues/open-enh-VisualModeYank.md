@@ -12,26 +12,31 @@ gutter and crops it. Textual's own mouse selection (`textual/widget.py:4213`
 `render_line` widget unless `get_selection` is overridden.
 
 ## Desired Behaviour
-- A key enters caret mode. A cell cursor appears on the cursor block's first line.
-- Motions: `h` `j` `k` `l`, `w` `b` `e`, `0` `^` `$`, `gg` `G`, and `ctrl+d`/`ctrl+u`.
-  The view scrolls to keep the caret visible.
+- **Normal mode has a caret.** A cell cursor is always shown, as in vim. It starts on the
+  first line of the session. The block cursor is the block the caret is in, so the status
+  line, Enter and `e`/`c` act on that block.
+- **Motions in normal mode:** `h` `j` `k` `l`, `w` `b`, `0` `^` `$`, `gg` `G`, `{` `}`,
+  `ctrl+d`/`ctrl+u`. The view scrolls to keep the caret visible.
+- `e` and `c` keep their meanings (expand and collapse the tool's calls), so vim's `e`
+  motion is left out.
 - `v` starts a character selection and `V` a line selection, from the caret. Motions extend
   the selection.
 - `y` copies the selection and returns to normal mode. The status line reports how many
   lines were copied.
 - Copied text is the rendered text without the gutter and without the block markers (`⏺ `,
   `  ⎿  `), with trailing spaces removed.
-- `Esc` leaves visual mode first, then caret mode. Only an `Esc` in normal mode reaches
+- `Esc` in visual mode returns to normal mode. Only an `Esc` in normal mode reaches
   `SessionScreen`'s close (`app.py:210`).
-- Outside caret and visual mode, every key does what it does now.
+- When a block collapses under the caret, the caret moves to that block's first line.
 - Check: select the three lines of a Bash command's output with `V` `j` `j` `y`, paste into
   Notepad, and get those three lines with no `⎿` and no padding.
 
 ## Design
 ### 1. A mode on `TranscriptView`, drawn per line
-- **State.** Add a `mode` reactive (`normal`, `caret`, `visual`, `line`), a caret
-  `(line, col)` and an anchor. Keep `cursor` set to the caret's block, so the status line
-  and `enter`/`e`/`c` still work.
+- **State.** Add a `mode` reactive (`normal`, `visual`, `line`), a caret `(line, col)` that
+  exists in every mode, and an anchor for the selection. Derive `cursor` from the caret's
+  line with `bisect_right(self._offsets, line) - 1`, so the status line and
+  `enter`/`e`/`c` still work.
 - **Drawing.** In `render_line`, split the strip with `strip.divide` and style the caret cell
   and the selection with `apply_style(Style(reverse=True))` (`textual/strip.py:576,606`).
   Offset by `GUTTER`. Draw this per line and never in `_cache`, so moving the caret doesn't
@@ -61,9 +66,6 @@ added later alongside option 1.
 - `src/claude-viewer/claude_viewer/render.py:72-77` (`marked`, which sets the marker widths)
 
 ## Open Questions
-- Which key enters caret mode? vim's `v` starts visual mode directly. Pressing `v` on the
-  current block could also place the caret at its first line and start visual mode at once.
-  Settled by trying both.
 - Does Windows Terminal accept OSC 52, and is there a size limit? This is untested. With
   `clip.exe` also used, OSC 52 is only a fallback, so this matters only off WSL.
 - How Markdown lists and code blocks indent inside the grid's second column is unverified.

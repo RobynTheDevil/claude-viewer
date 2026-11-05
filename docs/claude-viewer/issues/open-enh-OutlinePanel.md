@@ -8,42 +8,37 @@ See every prompt in a session at once and jump straight to one.
 status line and the find box vertically. Nothing lists the prompts.
 
 ## Desired Behaviour
-- `-` toggles a panel on the left, about 32 columns wide, that lists every prompt by its
-  first line.
-- When the panel opens, it takes focus and highlights the prompt that contains the cursor.
-- `j`, `k` and Enter work in the panel. Enter jumps the view to that prompt and returns focus
-  to the view. The panel stays open.
-- While the panel is open, moving the cursor in the view moves the panel's highlight.
-- `Esc` or `q` closes the panel before it closes the screen.
-- Check: open the panel on the 37 MB session, pick the third prompt, and the view shows it
-  at the top. Close and reopen the panel, and the third prompt is still highlighted.
+- `-` opens a simple menu at the bottom of the screen, above the status line. It lists every
+  prompt by its first line, at most 10 rows high, and scrolls when there are more.
+- The menu takes focus when it opens and highlights the prompt that contains the cursor.
+- `j`/`k` move in the menu. Enter jumps the view to that prompt, closes the menu and returns
+  focus to the view.
+- `Esc`, `q` or `-` closes the menu without moving, before anything closes the screen.
+- Check: open the menu on the 37 MB session, pick the third prompt, and the view shows it at
+  the top. Reopen the menu, and the third prompt is highlighted.
 
 ## Design
-### 1. An OptionList beside the view
-- **Layout.** Put `TranscriptView` and an `OptionList` (`#outline`, `display: none`) in a
-  `Horizontal` with height `1fr`.
-- **Toggle.** Bind `minus` (`textual/keys.py:209`) on `SessionScreen` to show or hide it.
-- **Jump.** On `OptionList.OptionSelected`, call `view.action_jump(prompt_index[n])`.
-- **Sync.** Keep the highlight in step through the existing cursor watch (`app.py:233`).
-- **Close order.** `action_close` (`app.py:270`) hides the panel first.
+### 1. An OptionList docked at the bottom
+- **Layout.** Add an `OptionList` (`#outline`, `display: none`, `max-height: 10`) to
+  `SessionScreen.compose`, between the view and the status line.
+- **Toggle.** Bind `minus` (`textual/keys.py:209`) on `SessionScreen` to show it, highlight
+  the cursor's prompt, and focus it.
+- **Keys.** Give it the `SessionList` `j`/`k` bindings (`app.py:281-287`).
+- **Jump.** On `OptionList.OptionSelected`, call `view.action_jump(prompt_index[n])`, hide
+  the menu and focus the view.
+- **Close order.** `action_close` (`app.py:270`) hides the menu first.
 
-Opening the panel changes the view's width. That runs `on_resize` → `_layout`
-(`app.py:79-95`), which clears and re-renders every block: about 0.8 s on the largest
-session. To avoid it, render at the narrower width once and keep it, or overlay the panel
-without resizing.
+The menu changes only the view's height. `_layout` (`app.py:79-88`) clears the cache only
+when the width changes, so opening the menu re-uses every rendered block.
 
-### 2. An overlay
-Show the outline as a modal `Screen` over the view. The view's width doesn't change, so
-there is no re-render, but the view isn't visible beside the list.
+Robyn chose this over a side panel, which narrows the view and re-renders every block,
+about 0.8 s on the largest session.
 
 ## Affected Code
 - `src/claude-viewer/claude_viewer/app.py:186-275` (`SessionScreen`: CSS, compose,
   bindings, close)
 - `src/claude-viewer/claude_viewer/app.py:79-95` (layout on resize)
-
-## Open Questions
-- Is a re-render of about 0.8 s on opening acceptable, or should the panel be an overlay?
-  Settled by trying the side panel on the largest session.
+- `src/claude-viewer/claude_viewer/app.py:281-287` (`SessionList` key bindings to reuse)
 
 ## Priority
 Medium

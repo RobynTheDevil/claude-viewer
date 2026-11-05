@@ -14,10 +14,11 @@ Agent 83, ToolSearch 71, EnterWorktree 69, AskUserQuestion 66, ExitWorktree 50, 
 
 ## Desired Behaviour
 - A key (`f`) cycles through: all, read-only, changes. The status line names the filter.
-- **Read-only** shows prompts, replies and calls to Read, Grep, Glob, LS, WebFetch,
-  WebSearch and NotebookRead.
-- **Changes** shows prompts, replies and every call with a diff (Edit, Write, MultiEdit,
-  NotebookEdit).
+- The category comes from the file diff, not the tool name. A call is a change when its
+  result has a `structuredPatch`, so `block.patch` is set. That covers Edit and Write, and
+  any other tool that records a diff.
+- **Changes** shows prompts, replies and every call with a diff.
+- **Read-only** shows prompts, replies and every call without a diff, Bash included.
 - Hidden blocks take no lines. The cursor, `{`/`}`, search and `e`/`c` skip them.
 - Usage lines hide along with their message's blocks.
 - Changing the filter keeps the cursor block on screen, or the nearest visible block.
@@ -45,11 +46,8 @@ and the collapse states have to be mapped between the two lists.
 - `src/claude-viewer/claude_viewer/app.py:139-183` (motions, `find`)
 - `src/claude-viewer/claude_viewer/app.py:236-246` (status)
 
-## Open Questions
-- **Bash, 80% of calls, fits neither preset.** Sort it by its first word (`rg`, `grep`,
-  `ls`, `cat`, `find`, `git log|status|diff|show` as read-only), give it a preset of its own,
-  or leave it out of both? Robyn's call.
-- Skill, Agent, worktree and Task tools fit neither preset. Hide them under both?
+A Bash command that changes files (`sed -i`, `git commit`) records no diff, so it counts as
+read-only. Robyn chose this over sorting Bash by its first word.
 
 ## Priority
 Medium
