@@ -20,30 +20,7 @@ None open.
 
 ## enhancements:
 
-- [Line Scroll Block Motions](issues/open-enh-LineScrollBlockMotions.md)
-    - `j`/`k` move the caret a line, `ctrl+e`/`ctrl+y` scroll, `}`/`{` step blocks. Test: `j` through a block taller than the screen, then `}`.
-- [Half Page Scroll](issues/open-enh-HalfPageScroll.md)
-    - Test: on the 37 MB session, `ctrl+d` five times then `ctrl+u` five times returns to the same place.
-- [Jump Between Prompts](issues/open-enh-JumpBetweenPrompts.md)
-    - Test: `]]` and `[[` step prompts and scroll each to the top. `gg` replaces `g`.
-- [Regex Search](issues/open-enh-RegexSearch.md)
-    - Test: `/Bash\(git` finds a git call, `/(` reports the error, `/Widget` is case-sensitive.
-- [Highlight Matches](issues/open-enh-HighlightMatches.md)
-    - Test: `/git` highlights every match on screen, brighter in the cursor block. Esc clears.
-- [Hide Token Usage](issues/open-enh-HideTokenUsage.md)
-    - Test: `u` hides every usage line. `--no-usage` also applies to `--print` and `--export`.
-- [Filter By Tool](issues/open-enh-FilterByTool.md)
-    - Test: `f` cycles all, read-only, changes. The status line names it.
-- [Visual Mode Yank](issues/open-enh-VisualModeYank.md)
-    - Test: `V` `j` `j` `y` on Bash output, then paste into Notepad.
-- [Outline Panel](issues/open-enh-OutlinePanel.md)
-    - Test: `-`, pick the third prompt, reopen and it is highlighted.
-- [Open File At Line](issues/open-enh-OpenFileAtLine.md)
-    - Test: `gf` on an Edit opens nvim at its first changed line. `:q` returns.
-- [Syntax Highlight Output](issues/open-enh-SyntaxHighlightOutput.md)
-    - Test: expand a `.rs` Read and a `.py` Edit. Both show colors, and `+` lines keep green.
-- [Timestamps](issues/open-enh-Timestamps.md)
-    - Test: `t` shows prompt times, call durations and gaps over 5 s.
+None open.
 
 ## back-burner:
 

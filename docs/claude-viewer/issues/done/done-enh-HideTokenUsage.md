@@ -19,7 +19,7 @@ under its message (`app.py:69-71`). There is no way to hide it.
 
 ## Design
 ### 1. Zero-line hidden blocks
-Use the hidden-block mechanism from [FilterByTool](open-enh-FilterByTool.md): usage blocks
+Use the hidden-block mechanism from [FilterByTool](done-enh-FilterByTool.md): usage blocks
 get no strips while hidden, and the blank-line rule tests the next visible block. Pass the
 flag from `cli.py:16-19` through `ViewerApp` to the view, and to `print_session`
 (`render.py:172`) and `to_markdown` (`export.py:70`).
@@ -42,4 +42,4 @@ toggle would need to parse again.
 Medium
 
 ## Related Files
-- [open-enh-FilterByTool.md](open-enh-FilterByTool.md)
+- [open-enh-FilterByTool.md](done-enh-FilterByTool.md)

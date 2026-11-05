@@ -11,7 +11,7 @@ isn't marked. The query is stored on `SessionScreen.query_text`.
 ## Desired Behaviour
 - After a search, every match in the visible lines has a highlight background. The match the
   cursor is on has a stronger one.
-- The highlight follows the query from [RegexSearch](open-enh-RegexSearch.md), including
+- The highlight follows the query from [RegexSearch](done-enh-RegexSearch.md), including
   smart case.
 - An empty query or `Esc` in normal mode clears the highlights.
 - Scrolling and toggling blocks keep the highlights without re-rendering blocks.
@@ -44,4 +44,4 @@ new query clears and re-renders every block.
 Medium
 
 ## Related Files
-- [open-enh-RegexSearch.md](open-enh-RegexSearch.md)
+- [open-enh-RegexSearch.md](done-enh-RegexSearch.md)

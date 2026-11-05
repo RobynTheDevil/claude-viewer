@@ -27,7 +27,7 @@ Add an `on_key` to `TranscriptView`. It runs before the widget's `BINDINGS`
 2. A matching second key runs `action_prompt(±1)`.
 
 Build a sorted list of prompt indexes in `__init__` and `bisect` the cursor into it. The same
-handler serves `gg` and `gf` ([OpenFileAtLine](open-enh-OpenFileAtLine.md)).
+handler serves `gg` and `gf` ([OpenFileAtLine](done-enh-OpenFileAtLine.md)).
 
 ### 2. Single keys
 Bind `[` and `]` alone. This is simpler, but it isn't what vim does and it leaves no room for
@@ -42,4 +42,4 @@ other bracket motions later.
 High
 
 ## Related Files
-- [open-enh-OutlinePanel.md](open-enh-OutlinePanel.md), which uses the same prompt index
+- [open-enh-OutlinePanel.md](done-enh-OutlinePanel.md), which uses the same prompt index

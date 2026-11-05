@@ -30,7 +30,7 @@ Run the editor inside `with self.app.suspend(): subprocess.run(...)`
 (`textual/app.py:4718`). Catch `SuspendNotSupported` and show it in the status line. Pass
 `+N file` for vim, nvim, nano, less and nvr, and `-g file:N` for `code`. Turn a `C:\...`
 path into a WSL path with `wslpath`. `gf` and `gg` go through the prefix-key handler from
-[JumpBetweenPrompts](open-enh-JumpBetweenPrompts.md).
+[JumpBetweenPrompts](done-enh-JumpBetweenPrompts.md).
 
 ### 2. Print the command
 Show `nvim +N path` in the status line, or copy it, and let Robyn run it. This needs no

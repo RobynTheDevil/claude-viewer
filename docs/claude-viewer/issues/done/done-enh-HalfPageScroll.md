@@ -35,7 +35,7 @@ at the App level (`textual/app.py:455-463`), so these keys don't clash.
 ### 2. Textual's page actions plus a scroll watcher
 Keep Textual's `page_down` and `page_up`, and add a `watch_scroll_y` that moves the cursor
 into view. That doesn't give a half page, so `ctrl+d` and `ctrl+u` still need option 1. The
-watcher is part of [LineScrollBlockMotions](open-enh-LineScrollBlockMotions.md).
+watcher is part of [LineScrollBlockMotions](done-enh-LineScrollBlockMotions.md).
 
 ## Affected Code
 - `src/claude-viewer/claude_viewer/app.py:40-50` (bindings)
@@ -48,4 +48,4 @@ Medium
 
 ## Related Files
 - `src/claude-viewer/tests/test_viewer.py`
-- [open-enh-LineScrollBlockMotions.md](open-enh-LineScrollBlockMotions.md)
+- [open-enh-LineScrollBlockMotions.md](done-enh-LineScrollBlockMotions.md)

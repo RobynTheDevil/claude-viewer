@@ -13,7 +13,7 @@ it.
 
 ## Desired Behaviour
 - `j`/`down` and `k`/`up` move by one line. Neither animates. Once
-  [VisualModeYank](open-enh-VisualModeYank.md) adds the normal-mode caret, they move the
+  [VisualModeYank](done-enh-VisualModeYank.md) adds the normal-mode caret, they move the
   caret one line and the view scrolls when the caret reaches its edge, as in vim. Build
   this item's line step so the caret can take it over.
 - `}` moves the cursor to the next block and `{` to the previous block, the old `j`/`k`
@@ -28,7 +28,7 @@ it.
 ## Design
 ### 1. Own line-scroll actions and one scroll watcher
 1. Bind `j,down` to `action_scroll_rows(1)` and `k,up` to `action_scroll_rows(-1)`, from
-   [HalfPageScroll](open-enh-HalfPageScroll.md).
+   [HalfPageScroll](done-enh-HalfPageScroll.md).
 2. Bind `}` and `{` to the existing `move(±1)`. Textual turns the characters into
    `right_curly_bracket` and `left_curly_bracket` (`textual/binding.py:154-155`,
    `textual/keys.py:241,243`).
@@ -49,5 +49,5 @@ default, which makes held keys lag behind. Option 1 is preferred.
 High
 
 ## Related Files
-- [open-enh-HalfPageScroll.md](open-enh-HalfPageScroll.md)
-- [open-enh-VisualModeYank.md](open-enh-VisualModeYank.md), which also binds `j` and `k`
+- [open-enh-HalfPageScroll.md](done-enh-HalfPageScroll.md)
+- [open-enh-VisualModeYank.md](done-enh-VisualModeYank.md), which also binds `j` and `k`

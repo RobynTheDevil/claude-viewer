@@ -35,7 +35,7 @@ visible block that follows a run of hidden ones. Then:
 - The whole cache is cleared when the filter changes.
 - The status line counts visible blocks.
 
-This mechanism is shared with [HideTokenUsage](open-enh-HideTokenUsage.md).
+This mechanism is shared with [HideTokenUsage](done-enh-HideTokenUsage.md).
 
 ### 2. Rebuild the block list
 Filter `blocks` into a new list and lay it out again. It's simpler, but the cursor index
@@ -53,4 +53,4 @@ read-only. Robyn chose this over sorting Bash by its first word.
 Medium
 
 ## Related Files
-- [open-enh-HideTokenUsage.md](open-enh-HideTokenUsage.md)
+- [open-enh-HideTokenUsage.md](done-enh-HideTokenUsage.md)
