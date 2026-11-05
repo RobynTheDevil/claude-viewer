@@ -17,6 +17,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("-a", "--all", action="store_true", help="pick from every project, not only the current directory's")
     parser.add_argument("-p", "--print", dest="print_", action="store_true", help="print the default view to stdout and exit")
     parser.add_argument("-o", "--export", metavar="FILE", help="write the session as Markdown to FILE, or - for stdout")
+    parser.add_argument("--no-usage", dest="usage", action="store_false", help="hide per-message token usage")
     args = parser.parse_args(argv)
 
     path = None
@@ -33,7 +34,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.export:
         from claude_viewer.export import to_markdown
 
-        text = to_markdown(parse(path))
+        text = to_markdown(parse(path), usage=args.usage)
         if args.export == "-":
             sys.stdout.write(text)
         else:
@@ -43,13 +44,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.print_:
         from claude_viewer.render import print_session
 
-        print_session(parse(path))
+        print_session(parse(path), usage=args.usage)
         return 0
 
     from claude_viewer.app import ViewerApp
 
     if path is not None:
-        ViewerApp(session=parse(path)).run()
+        ViewerApp(session=parse(path), show_usage=args.usage).run()
         return 0
 
     directories = all_project_dirs() if args.all else [project_dir_for(os.getcwd())]
@@ -58,5 +59,5 @@ def main(argv: list[str] | None = None) -> int:
         where = "any project" if args.all else os.getcwd()
         print(f"claude-viewer: no sessions for {where}; try --all", file=sys.stderr)
         return 2
-    ViewerApp(sessions=sessions, show_project=args.all).run()
+    ViewerApp(sessions=sessions, show_project=args.all, show_usage=args.usage).run()
     return 0

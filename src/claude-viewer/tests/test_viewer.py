@@ -189,3 +189,44 @@ def test_regex_search_in_view(long_transcript):
         assert view.pattern is None
         assert app.screen is not None and app.is_running
     run_view(long_transcript, script, size=(80, 30))
+
+
+def test_usage_toggle_and_flag(transcript, capsys):
+    async def script(app, view, pilot):
+        usage = [i for i, b in enumerate(view.blocks) if b.kind == "usage"]
+        before = view.virtual_size.height
+        await pilot.press("u")
+        assert not any(view.shown[i] for i in usage)
+        assert all(view._strips(i) == [] for i in usage)
+        assert view.virtual_size.height == before - len(usage)
+        for i in range(len(view.blocks)):
+            if view.shown[i]:
+                assert view._strips(i)[-1].cell_length == 0
+        for _ in range(12):
+            await pilot.press("right_curly_bracket")
+            assert view.shown[view.cursor]
+        await pilot.press("u")
+        assert all(view.shown)
+    run_view(transcript, script, size=(100, 30))
+    assert main([str(transcript), "--export", "-", "--no-usage"]) == 0
+    assert "<sub>" not in capsys.readouterr().out
+    assert main([str(transcript), "--print", "--no-usage"]) == 0
+    assert "· claude-opus" not in capsys.readouterr().out
+
+
+def test_filter_changes_and_read_only(transcript):
+    async def script(app, view, pilot):
+        await pilot.press("f")
+        assert view.filter == "read-only"
+        shown = [view.blocks[i] for i in range(len(view.blocks)) if view.shown[i]]
+        assert [b.tool or b.kind for b in shown] == ["prompt", "prompt", "Bash", "usage", "text", "usage"]
+        await pilot.press("f")
+        assert view.filter == "changes"
+        shown = [view.blocks[i] for i in range(len(view.blocks)) if view.shown[i]]
+        assert [b.tool or b.kind for b in shown] == ["prompt", "prompt", "Edit", "usage", "text", "usage"]
+        await pilot.press("home", "right_curly_bracket", "right_curly_bracket")
+        assert view.blocks[view.cursor].tool == "Edit"
+        assert "changes" in str(app.screen.query_one("#status").render())
+        await pilot.press("f")
+        assert view.filter == "all" and all(view.shown)
+    run_view(transcript, script, size=(100, 30))

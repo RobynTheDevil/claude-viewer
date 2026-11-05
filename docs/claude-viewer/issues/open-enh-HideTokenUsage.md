@@ -35,8 +35,8 @@ toggle would need to parse again.
 - `src/claude-viewer/claude_viewer/export.py:70`
 
 ## Open Questions
-- Should the choice persist between runs? No settings file exists today. A config under
-  `claude_home()` would be new. Settled by whether `--no-usage` in an alias is enough.
+- Should the choice persist between runs? Settled: no. `--no-usage` in an alias carries
+  it, and no settings file is added.
 
 ## Priority
 Medium

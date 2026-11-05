@@ -60,6 +60,8 @@ Keys, less/vim style. Arrow keys work as `j`/`k`.
 | Enter, click | toggle the block |
 | `e`/`c` | expand or collapse every call to the cursor block's tool |
 | `E`/`C` | expand or collapse every block |
+| `f` | cycle the filter: all, read-only, changes |
+| `u` | show or hide token usage lines |
 | `/`, `n`/`N` | find by regular expression, next and previous match |
 | Esc | clear the match highlights, or back when there are none |
 | `q` | back, or quit |
@@ -68,6 +70,16 @@ The block cursor stays on screen: any scroll that would leave it off moves it to
 visible block going down or the last going up. Two-key motions go through a prefix handler
 in `TranscriptView.on_key`; a first key followed by anything else, or by nothing for 1 s,
 does nothing.
+
+**Hidden blocks take no lines.** The filter and the usage toggle set `TranscriptView.shown`;
+a hidden block's strips are empty, so `bisect_right` over the offsets lands on the visible
+block after a run of hidden ones. Motions, search and `e`/`c`/`E`/`C` skip hidden blocks, and
+the blank line after a block depends on the next shown one, so a change of visibility clears
+the whole cache. A call is a change when its result has a `structuredPatch`; every other call
+is read-only, Bash included, whatever it ran. Prompts and replies show under every filter,
+thinking and notes only under all, and a usage line only while a block of its message shows.
+`--no-usage` starts with usage hidden and leaves it out of `--print` and `--export`. No
+settings file exists; an alias carries the flag.
 
 Search is a Python regular expression with smart case: it ignores case unless the query has
 an uppercase letter. It matches a block's text, its header as drawn (`Bash(git status)`),

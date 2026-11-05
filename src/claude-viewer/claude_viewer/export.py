@@ -65,7 +65,7 @@ def block_markdown(block: Block) -> str:
     return block.text
 
 
-def to_markdown(session: Session) -> str:
+def to_markdown(session: Session, usage: bool = True) -> str:
     parts = [f"# {session.title}", f"`{session.session_id}`"]
-    parts.extend(block_markdown(block) for block in session.blocks)
+    parts.extend(block_markdown(block) for block in session.blocks if usage or block.kind != "usage")
     return "\n\n".join(parts) + "\n"

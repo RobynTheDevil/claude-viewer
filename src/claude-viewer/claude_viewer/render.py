@@ -165,10 +165,12 @@ def render_block(block: Block) -> RenderableType:
     return Text(block.text)
 
 
-def print_session(session: Session, console: Console | None = None) -> None:
+def print_session(session: Session, console: Console | None = None, usage: bool = True) -> None:
     console = console or Console()
     console.print(Text(session.title, style="bold"))
     console.print(Text(session.session_id, style="dim"))
     for block in session.blocks:
+        if block.kind == "usage" and not usage:
+            continue
         console.print()
         console.print(render_block(block))

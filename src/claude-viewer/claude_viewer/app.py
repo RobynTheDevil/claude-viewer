@@ -24,6 +24,7 @@ from claude_viewer.transcript import Block, Session, SessionInfo, parse
 GUTTER = 2
 CURSOR = Segment("▌ ", Style(color="cyan", bold=True))
 PLAIN = Segment("  ")
+FILTERS = ("all", "read-only", "changes")
 MATCH = Style(bgcolor="#5f4b00")
 CURRENT_MATCH = Style(bgcolor="#d7af00", color="black")
 
@@ -77,6 +78,8 @@ class TranscriptView(ScrollView, can_focus=True):
         Binding("c", "group(True)", "Collapse tool"),
         Binding("E", "every(False)", "Expand all"),
         Binding("C", "every(True)", "Collapse all"),
+        Binding("f", "cycle_filter", "Filter"),
+        Binding("u", "toggle_usage", "Usage"),
     ]
 
     PREFIXES = {
@@ -93,9 +96,13 @@ class TranscriptView(ScrollView, can_focus=True):
             super().__init__()
             self.text = text
 
-    def __init__(self, blocks: list[Block], **kwargs) -> None:
+    def __init__(self, blocks: list[Block], show_usage: bool = True, **kwargs) -> None:
         super().__init__(**kwargs)
         self.blocks = blocks
+        self.show_usage = show_usage
+        self.filter = "all"
+        self.shown: list[bool] = []
+        self._compute_visible()
         self.prompts = [i for i, b in enumerate(blocks) if b.kind == "prompt"]
         self._cache: dict[int, list[Strip]] = {}
         self._width = 0
@@ -107,16 +114,42 @@ class TranscriptView(ScrollView, can_focus=True):
         self._search_text: dict[int, str] = {}
         self.pattern: re.Pattern | None = None
 
+    def _passes_filter(self, block: Block) -> bool:
+        if self.filter == "all" or block.kind in ("prompt", "text"):
+            return True
+        if block.kind != "tool":
+            return False
+        return bool(block.patch) == (self.filter == "changes")
+
+    def _compute_visible(self) -> None:
+        shown = [b.kind != "usage" and self._passes_filter(b) for b in self.blocks]
+        messages = {b.msg_id for b, on in zip(self.blocks, shown) if on and b.msg_id}
+        for i, b in enumerate(self.blocks):
+            if b.kind == "usage":
+                shown[i] = self.show_usage and (self.filter == "all" or b.msg_id in messages)
+        self.shown = shown
+
+    def _next_visible(self, i: int, step: int) -> int | None:
+        i += step
+        while 0 <= i < len(self.blocks):
+            if self.shown[i]:
+                return i
+            i += step
+        return None
+
     def _strips(self, i: int) -> list[Strip]:
         strips = self._cache.get(i)
         if strips is None:
-            console = self.app.console
-            options = console.options.update_width(self._width)
-            lines = console.render_lines(render_block(self.blocks[i]), options, pad=False)
-            strips = [Strip(line) for line in lines]
-            following = self.blocks[i + 1] if i + 1 < len(self.blocks) else None
-            if following is None or following.kind != "usage":
-                strips.append(Strip.blank(0))
+            if not self.shown[i]:
+                strips = []
+            else:
+                console = self.app.console
+                options = console.options.update_width(self._width)
+                lines = console.render_lines(render_block(self.blocks[i]), options, pad=False)
+                strips = [Strip(line) for line in lines]
+                following = self._next_visible(i, 1)
+                if following is None or self.blocks[following].kind != "usage":
+                    strips.append(Strip.blank(0))
             self._cache[i] = strips
         return strips
 
@@ -165,6 +198,8 @@ class TranscriptView(ScrollView, can_focus=True):
             self._scrolling = False
 
     def _block_at(self, line: int) -> int:
+        if self._total == 0:
+            return self.cursor
         line = max(0, min(line, self._total - 1))
         return bisect_right(self._offsets, line) - 1
 
@@ -267,13 +302,52 @@ class TranscriptView(ScrollView, can_focus=True):
 
     def action_move(self, step: int) -> None:
         if self.blocks:
-            self.cursor = max(0, min(len(self.blocks) - 1, self.cursor + step))
+            i = self._next_visible(self.cursor, step)
+            if i is not None:
+                self.cursor = i
             self._show_cursor()
 
     def action_jump(self, index: int) -> None:
         if self.blocks:
-            self.cursor = index % len(self.blocks)
+            if index < 0:
+                i = self._next_visible(len(self.blocks), -1)
+            else:
+                i = self._next_visible(index - 1, 1)
+            if i is not None:
+                self.cursor = i
             self._show_cursor()
+
+    @property
+    def visible_count(self) -> int:
+        return sum(self.shown)
+
+    @property
+    def position(self) -> int:
+        return sum(self.shown[: self.cursor + 1])
+
+    def _apply_visibility(self) -> None:
+        anchor = self.cursor
+        row = self._offsets[anchor] - self.scroll_offset.y if self._offsets else 0
+        self._compute_visible()
+        if not self.shown[anchor]:
+            after = self._next_visible(anchor, 1)
+            anchor = after if after is not None else self._next_visible(anchor, -1)
+        self._cache.clear()
+        self._layout()
+        if anchor is not None:
+            self.cursor = anchor
+            self._scroll(self._offsets[anchor] - max(0, row))
+            self._show_cursor()
+
+    def action_cycle_filter(self) -> None:
+        self.filter = FILTERS[(FILTERS.index(self.filter) + 1) % len(FILTERS)]
+        self._apply_visibility()
+        self.post_message(self.Notice(f"filter: {self.filter}"))
+
+    def action_toggle_usage(self) -> None:
+        self.show_usage = not self.show_usage
+        self._apply_visibility()
+        self.post_message(self.Notice("usage shown" if self.show_usage else "usage hidden"))
 
     def action_toggle(self) -> None:
         if self.blocks:
@@ -283,10 +357,10 @@ class TranscriptView(ScrollView, can_focus=True):
     def action_group(self, collapsed: bool) -> None:
         if self.blocks:
             group = self.blocks[self.cursor].group
-            self._set_collapsed([i for i, b in enumerate(self.blocks) if b.group == group], collapsed)
+            self._set_collapsed([i for i, b in enumerate(self.blocks) if b.group == group and self.shown[i]], collapsed)
 
     def action_every(self, collapsed: bool) -> None:
-        self._set_collapsed(range(len(self.blocks)), collapsed)
+        self._set_collapsed([i for i in range(len(self.blocks)) if self.shown[i]], collapsed)
 
     def on_click(self, event: events.Click) -> None:
         line = self.scroll_offset.y + event.y
@@ -313,7 +387,7 @@ class TranscriptView(ScrollView, can_focus=True):
         n = len(self.blocks)
         for k in range(1, n + 1):
             i = (self.cursor + step * k) % n
-            if pattern.search(self._searchable(i)):
+            if self.shown[i] and pattern.search(self._searchable(i)):
                 self.cursor = i
                 self._set_collapsed([i], False)
                 self._show_cursor()
@@ -349,10 +423,11 @@ class SessionScreen(Screen):
         Binding("escape", "escape", "Back", show=False),
     ]
 
-    def __init__(self, session: Session, standalone: bool) -> None:
+    def __init__(self, session: Session, standalone: bool, show_usage: bool = True) -> None:
         super().__init__()
         self.session = session
         self.standalone = standalone
+        self.show_usage = show_usage
         self.query_text = ""
         self.message = ""
 
@@ -360,7 +435,7 @@ class SessionScreen(Screen):
         title = Text(self.session.title, style="bold")
         title.append(f"  {self.session.session_id}", style="dim")
         yield Static(title, id="title")
-        yield TranscriptView(self.session.blocks, id="view")
+        yield TranscriptView(self.session.blocks, show_usage=self.show_usage, id="view")
         yield Static("", id="status")
         yield Input(placeholder="find", id="find")
 
@@ -386,10 +461,12 @@ class SessionScreen(Screen):
             text = "empty session"
         else:
             group = view.blocks[view.cursor].group
-            text = f"{view.cursor + 1}/{len(view.blocks)} [{group}]"
+            text = f"{view.position}/{view.visible_count} [{group}]"
+            if view.filter != "all":
+                text += f" {view.filter}"
             if self.message:
                 text += f"  {self.message}"
-            text += f"  ·  enter toggle  e/c {group}  E/C all  {{}} block  [[ ]] prompt  / find  q back"
+            text += f"  ·  enter toggle  e/c {group}  f filter  u usage  / find  q back"
         self.query_one("#status", Static).update(Text(text))
 
     def action_search(self) -> None:
@@ -501,7 +578,7 @@ class PickerScreen(Screen):
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         info = self.sessions[event.option_index]
-        self.app.push_screen(SessionScreen(parse(info.path), standalone=False))
+        self.app.push_screen(SessionScreen(parse(info.path), standalone=False, show_usage=self.app.show_usage))
 
 
 class ViewerApp(App):
@@ -512,14 +589,16 @@ class ViewerApp(App):
         session: Session | None = None,
         sessions: list[SessionInfo] | None = None,
         show_project: bool = False,
+        show_usage: bool = True,
     ) -> None:
         super().__init__()
         self.session = session
         self.sessions = sessions or []
         self.show_project = show_project
+        self.show_usage = show_usage
 
     def on_mount(self) -> None:
         if self.session is not None:
-            self.push_screen(SessionScreen(self.session, standalone=True))
+            self.push_screen(SessionScreen(self.session, standalone=True, show_usage=self.show_usage))
         else:
             self.push_screen(PickerScreen(self.sessions, self.show_project))
