@@ -444,3 +444,20 @@ def test_open_and_close_blocks(transcript):
         await pilot.press("X")
         assert blocks[thinking].collapsed
     run_view(transcript, script, size=(100, 30))
+
+
+
+def test_only_ctrl_c_quits(transcript):
+    async def script(app, view, pilot):
+        await pilot.press("v")
+        await pilot.press("q")
+        assert view.mode == "normal" and app.is_running
+        await pilot.press("V", "escape")
+        assert view.mode == "normal"
+        await pilot.press("q", "escape", "ctrl+q")
+        await pilot.pause()
+        assert app.is_running
+        await pilot.press("ctrl+c")
+        await pilot.pause()
+        assert not app.is_running
+    run_view(transcript, script)

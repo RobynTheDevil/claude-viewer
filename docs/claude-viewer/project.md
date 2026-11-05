@@ -70,7 +70,7 @@ Keys, vim style. Arrow keys work as `h`/`j`/`k`/`l`.
 | `ctrl+e`/`ctrl+y` | scroll one line |
 | `ctrl+d`/`ctrl+u` | scroll half a page; the caret keeps its screen row |
 | PgDn/PgUp | scroll a page, the same way |
-| `v`/`V` | start a character or line selection; `y` copies it, Esc cancels |
+| `v`/`V` | start a character or line selection; `y` copies it, Esc or `q` cancels |
 | `}`/`{` | next or previous block; the caret goes to its first line |
 | `]]`/`[[` | next or previous prompt, scrolled to the top |
 | `gg`/`G` | top and bottom; Home and End too |
@@ -84,8 +84,9 @@ Keys, vim style. Arrow keys work as `h`/`j`/`k`/`l`.
 | `t` | show or hide times: a prompt's local time, a call's duration, and the gap before either when over 5 s |
 | `-` | the outline: a menu of every prompt; `j`/`k` and Enter jump, Esc, `q` or `-` close |
 | `/`, `n`/`N` | find by regular expression, next and previous match |
-| Esc | leave visual mode, else clear the match highlights, else back |
-| `q` | back, or quit |
+| Esc | leave visual mode, else clear the match highlights, else back to the list |
+| `q` | leave visual mode, else back to the list |
+| `ctrl+c` | quit; nothing else quits, `ctrl+q` included |
 
 **The caret is the cursor.** Normal mode always shows a caret, a line and a character index into
 that line's strip. The block cursor is the block holding it, so the status line, Enter, `o`/`x`

@@ -461,7 +461,7 @@ class TranscriptView(ScrollView, can_focus=True):
         self._pending_timer = None
 
     async def on_key(self, event: events.Key) -> None:
-        if event.key == "escape" and self.mode != "normal":
+        if event.key in ("escape", "q") and self.mode != "normal":
             self.mode = "normal"
             event.stop()
             event.prevent_default()
@@ -693,7 +693,8 @@ class SessionScreen(Screen):
                 text += f" {view.filter}"
             if self.message:
                 text += f"  {self.message}"
-            text += f"  ·  enter toggle  o/x block  O/X {group}  f filter  u usage  - outline  / find  q back"
+            text += f"  ·  enter toggle  o/x block  O/X {group}  f filter  u usage  - outline  / find"
+            text += "  q back" if not self.standalone else "  ctrl+c quit"
         self.query_one("#status", Static).update(Text(text))
 
     def action_search(self) -> None:
@@ -780,9 +781,7 @@ class SessionScreen(Screen):
         elif find.display:
             find.display = False
             self.view.focus()
-        elif self.standalone:
-            self.app.exit()
-        else:
+        elif not self.standalone:
             self.app.pop_screen()
 
 
@@ -816,15 +815,13 @@ class PickerScreen(Screen):
     }
     """
 
-    BINDINGS = [Binding("q,escape", "app.quit", "Quit")]
-
     def __init__(self, sessions: list[SessionInfo], show_project: bool) -> None:
         super().__init__()
         self.sessions = sessions
         self.show_project = show_project
 
     def compose(self) -> ComposeResult:
-        yield Static(Text(f"{len(self.sessions)} sessions  ·  enter open  q quit", style="bold"), id="heading")
+        yield Static(Text(f"{len(self.sessions)} sessions  ·  enter open  ctrl+c quit", style="bold"), id="heading")
         options = []
         for info in self.sessions:
             line = Text.assemble((info.when, "dim"), "  ", (f"{size_label(info.size):>5}", "dim"), "  ")
@@ -845,6 +842,10 @@ class PickerScreen(Screen):
 
 class ViewerApp(App):
     TITLE = "claude-viewer"
+    BINDINGS = [
+        Binding("ctrl+c", "quit", "Quit", show=False, priority=True),
+        Binding("ctrl+q", "ignore", show=False, priority=True),
+    ]
 
     def __init__(
         self,
@@ -858,6 +859,9 @@ class ViewerApp(App):
         self.sessions = sessions or []
         self.show_project = show_project
         self.show_usage = show_usage
+
+    def action_ignore(self) -> None:
+        pass
 
     def on_mount(self) -> None:
         if self.session is not None:
