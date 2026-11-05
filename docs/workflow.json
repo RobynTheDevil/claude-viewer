@@ -1,0 +1,51 @@
+{
+    "base": "main",
+    "exclude": {},
+    "project_marker": "docs/{project}",
+    "topic_prefix": "{project}-",
+    "todo": "docs/{project}/todo.md",
+    "issues": "docs/{project}/issues",
+    "report": "(?P<state>open|done|wont)-(?P<kind>bug|enh)-(?P<name>\\w+)\\.md",
+    "report_name": "{state}-{kind}-{name}.md",
+    "report_kinds": {"bug": "root-cause-analysis", "enh": "enhancement-report"},
+    "open_state": "open",
+    "closed_states": ["done", "wont"],
+    "closed_dir": "done",
+    "log": "docs/{project}/done.md",
+    "markers": {
+        "x": "closed, ready for compaction",
+        "~": "waiting on confirmation",
+        "+": "carries a note from a confirmation round",
+        " ": "open"
+    },
+    "closed_marker": "x",
+    "report_markers": ["x", "~", "+"],
+    "kinds": {"src": "code", "docs": "docs", "tools": "tools"},
+    "wip_tags": "wip*",
+    "wip_tag_file": "wip-tag",
+    "claim_file": "claims",
+    "claim_tags": "claim",
+    "series": "tools/buildseries.sh {mod} {target}",
+    "worktree": {
+        "dir": ".worktrees",
+        "link": ["<workflow: gitignored path a tree links from the main checkout>"],
+        "copy": ["<workflow: gitignored glob a tree copies, e.g. src/*/lib/*>"],
+        "run": [],
+        "note": ""
+    },
+    "deploy": {
+        "source": "src/{project}",
+        "artefact": "<workflow: glob of the deployed build>",
+        "ignore": [],
+        "record": "<workflow: file the confirmation step writes>",
+        "build": "tools/build.sh {project} --force",
+        "shared": true
+    },
+    "confirm": {
+        "who": "<workflow: who confirms>",
+        "how": "<workflow: how a change is confirmed>",
+        "summary": "<workflow: command summarising the record>",
+        "follow": "<workflow: command following one scenario in the record>",
+        "evidence": "<workflow: what in the record shows a scenario ran>"
+    }
+}

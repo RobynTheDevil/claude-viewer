@@ -1,0 +1,32 @@
+# Read-only reference material, fetched or generated, never edited.
+ref
+
+# Build output and machine-specific build configuration, per project.
+src/*/<output>
+src/*/<machine-specific>
+
+# Generated corpora and artefacts: regenerable, large, or both.
+<generated>
+
+# Language and tool caches.
+__pycache__/
+*.pyc
+bin/
+obj/
+*.user
+
+# Worktrees and agent state.
+.worktrees
+.claude
+.agents
+
+# The person's own tracker, a symlink into ../_notes, committed there by them.
+_p.md
+
+
+# The trailing-slash trap
+#
+# Spell the paths a worktree symlinks WITHOUT a trailing slash: `ref` and not `ref/`.
+# A pattern ending in `/` matches a directory and not a symlink to one, so with the slash
+# every worktree reports its own wiring as untracked. The same applies to any path
+# the `worktree` section of docs/workflow.json links rather than copies.
