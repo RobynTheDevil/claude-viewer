@@ -20,7 +20,18 @@ None open.
 
 ## enhancements:
 
-None open.
+- [Line Scroll Block Motions](issues/open-enh-LineScrollBlockMotions.md)
+- [Half Page Scroll](issues/open-enh-HalfPageScroll.md)
+- [Jump Between Prompts](issues/open-enh-JumpBetweenPrompts.md)
+- [Regex Search](issues/open-enh-RegexSearch.md)
+- [Highlight Matches](issues/open-enh-HighlightMatches.md)
+- [Hide Token Usage](issues/open-enh-HideTokenUsage.md)
+- [Filter By Tool](issues/open-enh-FilterByTool.md)
+- [Visual Mode Yank](issues/open-enh-VisualModeYank.md)
+- [Outline Panel](issues/open-enh-OutlinePanel.md)
+- [Open File At Line](issues/open-enh-OpenFileAtLine.md)
+- [Syntax Highlight Output](issues/open-enh-SyntaxHighlightOutput.md)
+- [Timestamps](issues/open-enh-Timestamps.md)
 
 ## back-burner:
 
