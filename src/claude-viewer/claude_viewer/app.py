@@ -258,8 +258,15 @@ class TranscriptView(ScrollView, can_focus=True):
         if not 0 <= k < len(self.prompts):
             self.post_message(self.Notice("last prompt" if step > 0 else "first prompt"))
             return
+        self.go_prompt(k)
+
+    def go_prompt(self, k: int) -> None:
         self.cursor = self.prompts[k]
         self._scroll(self._offsets[self.cursor])
+
+    @property
+    def current_prompt(self) -> int:
+        return max(0, bisect_right(self.prompts, self.cursor) - 1)
 
     def _clear_pending(self) -> None:
         self._pending = None
@@ -408,6 +415,12 @@ class SessionScreen(Screen):
         color: $text-muted;
         padding: 0 1;
     }
+    SessionScreen #outline {
+        display: none;
+        max-height: 10;
+        border: none;
+        padding: 0;
+    }
     SessionScreen #find {
         display: none;
         height: 1;
@@ -418,6 +431,7 @@ class SessionScreen(Screen):
 
     BINDINGS = [
         Binding("slash", "search", "Find"),
+        Binding("minus", "outline", "Outline"),
         Binding("n", "next_match(1)", "Next match", show=False),
         Binding("N", "next_match(-1)", "Previous match", show=False),
         Binding("q", "close", "Back"),
@@ -437,6 +451,7 @@ class SessionScreen(Screen):
         title.append(f"  {self.session.session_id}", style="dim")
         yield Static(title, id="title")
         yield TranscriptView(self.session.blocks, show_usage=self.show_usage, id="view")
+        yield SessionList(id="outline")
         yield Static("", id="status")
         yield Input(placeholder="find", id="find")
 
@@ -467,7 +482,7 @@ class SessionScreen(Screen):
                 text += f" {view.filter}"
             if self.message:
                 text += f"  {self.message}"
-            text += f"  ·  enter toggle  e/c {group}  f filter  u usage  / find  q back"
+            text += f"  ·  enter toggle  e/c {group}  f filter  u usage  - outline  / find  q back"
         self.query_one("#status", Static).update(Text(text))
 
     def action_search(self) -> None:
@@ -508,7 +523,40 @@ class SessionScreen(Screen):
     def action_next_match(self, step: int) -> None:
         self._search(step)
 
+    @property
+    def outline(self) -> SessionList:
+        return self.query_one("#outline", SessionList)
+
+    def action_outline(self) -> None:
+        outline = self.outline
+        if outline.display:
+            self._close_outline()
+            return
+        view = self.view
+        if not view.prompts:
+            self.message = "no prompts"
+            self._update_status()
+            return
+        outline.clear_options()
+        outline.add_options([Option(Text(view.blocks[i].text.splitlines()[0] if view.blocks[i].text else "")) for i in view.prompts])
+        outline.display = True
+        outline.highlighted = view.current_prompt
+        outline.focus()
+
+    def _close_outline(self) -> None:
+        self.outline.display = False
+        self.view.focus()
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        if event.option_list.id == "outline":
+            event.stop()
+            self._close_outline()
+            self.view.go_prompt(event.option_index)
+
     def action_escape(self) -> None:
+        if self.outline.display:
+            self._close_outline()
+            return
         if self.view.pattern is not None and not self.query_one("#find", Input).display:
             self._clear_search()
         else:
@@ -516,7 +564,9 @@ class SessionScreen(Screen):
 
     def action_close(self) -> None:
         find = self.query_one("#find", Input)
-        if find.display:
+        if self.outline.display:
+            self._close_outline()
+        elif find.display:
             find.display = False
             self.view.focus()
         elif self.standalone:

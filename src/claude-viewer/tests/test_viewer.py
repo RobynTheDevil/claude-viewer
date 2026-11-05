@@ -230,3 +230,23 @@ def test_filter_changes_and_read_only(transcript):
         await pilot.press("f")
         assert view.filter == "all" and all(view.shown)
     run_view(transcript, script, size=(100, 30))
+
+
+def test_outline_menu(long_transcript):
+    async def script(app, view, pilot):
+        outline = app.screen.query_one("#outline")
+        await pilot.press("minus")
+        assert outline.display and outline.has_focus and outline.highlighted == 0
+        await pilot.press("j", "j", "enter")
+        prompts = view.prompts
+        assert not outline.display and view.has_focus
+        assert view.cursor == prompts[2] and view.scroll_offset.y == view._offsets[prompts[2]]
+        await pilot.press("minus")
+        assert outline.highlighted == 2
+        await pilot.press("k", "escape")
+        assert not outline.display and view.cursor == prompts[2] and app.is_running
+        await pilot.press("minus", "q")
+        assert not outline.display and app.is_running
+        await pilot.press("minus", "minus")
+        assert not outline.display
+    run_view(long_transcript, script, size=(80, 30))

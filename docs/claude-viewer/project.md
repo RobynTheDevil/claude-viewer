@@ -65,6 +65,7 @@ Keys, less/vim style. Arrow keys work as `j`/`k`.
 | `E`/`C` | expand or collapse every block |
 | `f` | cycle the filter: all, read-only, changes |
 | `u` | show or hide token usage lines |
+| `-` | the outline: a menu of every prompt; `j`/`k` and Enter jump, Esc, `q` or `-` close |
 | `/`, `n`/`N` | find by regular expression, next and previous match |
 | Esc | clear the match highlights, or back when there are none |
 | `q` | back, or quit |
@@ -83,6 +84,10 @@ is read-only, Bash included, whatever it ran. Prompts and replies show under eve
 thinking and notes only under all, and a usage line only while a block of its message shows.
 `--no-usage` starts with usage hidden and leaves it out of `--print` and `--export`. No
 settings file exists; an alias carries the flag.
+
+The outline is an `OptionList` above the status line, at most 10 rows. It changes only the
+view's height, so opening it re-renders nothing. It opens on the prompt containing the
+cursor.
 
 Search is a Python regular expression with smart case: it ignores case unless the query has
 an uppercase letter. It matches a block's text, its header as drawn (`Bash(git status)`),
