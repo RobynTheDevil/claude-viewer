@@ -334,3 +334,28 @@ def test_parse_keeps_read_file(tmp_path):
     path.write_text("".join(json.dumps(r) + "\n" for r in records))
     read = parse(path).blocks[0]
     assert read.file["content"] == "x = 1"
+
+
+def test_times_parsed_and_labelled(long_transcript):
+    from datetime import datetime, timezone
+    from claude_viewer.render import span_label, time_suffix
+    session = parse(long_transcript)
+    prompts = [b for b in session.blocks if b.kind == "prompt"]
+    tools = [b for b in session.blocks if b.kind == "tool"]
+    assert tools[0].duration == 5.0
+    assert prompts[1].gap == 9 * 60 + 25
+    local = datetime(2026, 11, 5, 10, 10, tzinfo=timezone.utc).astimezone().strftime("%H:%M:%S")
+    assert time_suffix(prompts[1]) == f"  {local} +9m25s"
+    assert time_suffix(tools[1]) == "  5.0s"
+    assert span_label(30.2) == "30s" and span_label(600) == "10m" and span_label(3725) == "1h02m"
+
+
+def test_times_toggle_in_view(long_transcript):
+    async def script(app, view, pilot):
+        first = view._strips(1)[0].text
+        assert "5.0s" not in first
+        await pilot.press("t")
+        assert view._strips(1)[0].text.rstrip().endswith("5.0s")
+        await pilot.press("t")
+        assert view._strips(1)[0].text == first
+    run_view(long_transcript, script, size=(100, 30))

@@ -84,6 +84,7 @@ class TranscriptView(ScrollView, can_focus=True):
         Binding("C", "every(True)", "Collapse all"),
         Binding("f", "cycle_filter", "Filter"),
         Binding("u", "toggle_usage", "Usage"),
+        Binding("t", "toggle_times", "Times"),
     ]
 
     PREFIXES = {
@@ -105,6 +106,7 @@ class TranscriptView(ScrollView, can_focus=True):
         self.blocks = blocks
         self.show_usage = show_usage
         self.filter = "all"
+        self.show_times = False
         self.shown: list[bool] = []
         self._compute_visible()
         self.prompts = [i for i, b in enumerate(blocks) if b.kind == "prompt"]
@@ -149,7 +151,7 @@ class TranscriptView(ScrollView, can_focus=True):
             else:
                 console = self.app.console
                 options = console.options.update_width(self._width)
-                lines = console.render_lines(render_block(self.blocks[i]), options, pad=False)
+                lines = console.render_lines(render_block(self.blocks[i], self.show_times), options, pad=False)
                 strips = [Strip(line) for line in lines]
                 following = self._next_visible(i, 1)
                 if following is None or self.blocks[following].kind != "usage":
@@ -356,7 +358,7 @@ class TranscriptView(ScrollView, can_focus=True):
     def position(self) -> int:
         return sum(self.shown[: self.cursor + 1])
 
-    def _apply_visibility(self) -> None:
+    def _relayout(self) -> None:
         anchor = self.cursor
         row = self._offsets[anchor] - self.scroll_offset.y if self._offsets else 0
         self._compute_visible()
@@ -372,13 +374,17 @@ class TranscriptView(ScrollView, can_focus=True):
 
     def action_cycle_filter(self) -> None:
         self.filter = FILTERS[(FILTERS.index(self.filter) + 1) % len(FILTERS)]
-        self._apply_visibility()
+        self._relayout()
         self.post_message(self.Notice(f"filter: {self.filter}"))
 
     def action_toggle_usage(self) -> None:
         self.show_usage = not self.show_usage
-        self._apply_visibility()
+        self._relayout()
         self.post_message(self.Notice("usage shown" if self.show_usage else "usage hidden"))
+
+    def action_toggle_times(self) -> None:
+        self.show_times = not self.show_times
+        self._relayout()
 
     def action_toggle(self) -> None:
         if self.blocks:

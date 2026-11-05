@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from functools import lru_cache
 from pathlib import PurePath
 
@@ -26,6 +27,7 @@ PROMPT_STYLE = "on grey15"
 ADD_STYLE = "on #16351f"
 DEL_STYLE = "on #3d1a1d"
 SYNTAX_THEME = "monokai"
+GAP_SHOWN = 5.0
 
 
 def tool_label(block: Block) -> str:
@@ -227,13 +229,48 @@ def tool_body(block: Block) -> RenderableType:
     return marked(ELBOW, "dim", preview)
 
 
-def render_block(block: Block) -> RenderableType:
+def span_label(seconds: float) -> str:
+    seconds = max(0.0, seconds)
+    if seconds < 10:
+        return f"{seconds:.1f}s"
+    total = round(seconds)
+    if total < 60:
+        return f"{total}s"
+    hours, rest = divmod(total, 3600)
+    minutes, secs = divmod(rest, 60)
+    if hours:
+        return f"{hours}h{minutes:02d}m"
+    return f"{minutes}m{secs:02d}s" if secs else f"{minutes}m"
+
+
+def time_suffix(block: Block) -> str:
+    parts = []
+    if block.kind == "prompt" and block.time is not None:
+        parts.append(datetime.fromtimestamp(block.time).strftime("%H:%M:%S"))
+    if block.kind == "tool" and block.duration is not None:
+        parts.append(span_label(block.duration))
+    if block.gap is not None and block.gap > GAP_SHOWN:
+        parts.append("+" + span_label(block.gap))
+    return "  " + " ".join(parts) if parts else ""
+
+
+def render_block(block: Block, show_times: bool = False) -> RenderableType:
+    suffix = time_suffix(block) if show_times and block.kind in ("prompt", "tool") else ""
     if block.kind == "prompt":
-        return Text("> " + block.text, style=PROMPT_STYLE)
+        first, newline, rest = block.text.partition("\n")
+        text = Text("> " + first, style=PROMPT_STYLE)
+        if suffix:
+            text.append(suffix, style="dim")
+        if newline:
+            text.append("\n" + rest)
+        return text
     if block.kind == "text":
         return marked(DOT, "white", Markdown(block.text))
     if block.kind == "tool":
-        return Group(tool_header(block), tool_body(block))
+        header = tool_header(block)
+        if suffix:
+            header.append(suffix, style="dim")
+        return Group(header, tool_body(block))
     if block.kind == "thinking":
         head = Text("✻ Thinking…", style="dim italic")
         if block.collapsed:

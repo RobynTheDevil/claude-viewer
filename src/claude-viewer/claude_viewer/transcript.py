@@ -41,6 +41,15 @@ class Block:
     model: str = ""
     msg_id: str = ""
     collapsed: bool = True
+    time: float | None = None
+    end: float | None = None
+    gap: float | None = None
+
+    @property
+    def duration(self) -> float | None:
+        if self.time is None or self.end is None:
+            return None
+        return self.end - self.time
 
     @property
     def group(self) -> str:
@@ -96,6 +105,15 @@ def _result_text(content) -> str:
     return ""
 
 
+def _timestamp(value) -> float | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        return datetime.fromisoformat(value).timestamp()
+    except ValueError:
+        return None
+
+
 def _prompt_text(text: str) -> str:
     name = COMMAND_NAME.search(text)
     if name:
@@ -113,6 +131,7 @@ class _Parser:
         self.seen: set[str] = set()
         self.title = ""
         self.first_prompt = ""
+        self.now: float | None = None
 
     def record(self, rec: dict) -> None:
         kind = rec.get("type")
@@ -125,10 +144,14 @@ class _Parser:
         if uid in self.seen:
             return
         self.seen.add(uid)
+        self.now = _timestamp(rec.get("timestamp"))
+        start = len(self.blocks)
         if kind == "assistant":
             self.assistant(rec)
         else:
             self.user(rec)
+        for block in self.blocks[start:]:
+            block.time = self.now
 
     def attachment(self, att: dict) -> None:
         if att.get("type") not in ATTACHMENT_KINDS:
@@ -205,6 +228,7 @@ class _Parser:
             return
         block.result = _result_text(item.get("content"))
         block.is_error = bool(item.get("is_error"))
+        block.end = self.now
         if isinstance(extra, dict) and isinstance(extra.get("file"), dict):
             block.file = extra["file"]
         if isinstance(extra, dict) and extra.get("structuredPatch"):
@@ -217,6 +241,13 @@ class _Parser:
             if block.msg_id:
                 last[block.msg_id] = i
         after = {i: msg_id for msg_id, i in last.items()}
+        previous = None
+        for block in self.blocks:
+            if block.time is None:
+                continue
+            if previous is not None:
+                block.gap = block.time - previous
+            previous = block.end if block.end is not None else block.time
         out = []
         for i, block in enumerate(self.blocks):
             out.append(block)

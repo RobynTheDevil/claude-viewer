@@ -47,6 +47,9 @@ An assistant message is split across records: one record per content block, all 
 - `<local-command-stdout>`: output of a local command.
 - `<system-reminder>` blocks inside prompt text. Not shown.
 
+**Every record has a `timestamp`**, ISO 8601 in UTC with milliseconds, as does each
+`tool_result` record, so a call's duration is its result's time minus its own.
+
 **Thinking text is usually empty.** A `thinking` block keeps its `signature`, but `thinking`
 is `""` unless the session recorded it. Empty ones carry nothing to show.
 

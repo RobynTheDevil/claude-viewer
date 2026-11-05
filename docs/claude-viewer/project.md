@@ -73,6 +73,7 @@ Keys, less/vim style. Arrow keys work as `j`/`k`.
 | `E`/`C` | expand or collapse every block |
 | `f` | cycle the filter: all, read-only, changes |
 | `u` | show or hide token usage lines |
+| `t` | show or hide times: a prompt's local time, a call's duration, and the gap before either when over 5 s |
 | `-` | the outline: a menu of every prompt; `j`/`k` and Enter jump, Esc, `q` or `-` close |
 | `/`, `n`/`N` | find by regular expression, next and previous match |
 | Esc | clear the match highlights, or back when there are none |
