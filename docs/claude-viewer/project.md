@@ -61,26 +61,26 @@ record kind the parser handles.
 | Shown collapsed | Thinking blocks, attachments (one line with the file name), per-message token usage and model. |
 | Not shown | System reminders, `isMeta` text, subagent turns. |
 
-Keys, vim style. Arrow keys work as `h`/`j`/`k`/`l`.
+Keys, vim style with less's paging keys too. Arrow keys work as `h`/`j`/`k`/`l`.
 
 | Key | Action |
 |---|---|
 | `j`/`k` | move the caret a line; the view scrolls at its edge |
 | `h`/`l`, `w`/`b`, `0`/`^`/`$` | move the caret along the line, by word, or to its start, first non-blank or end |
-| `ctrl+e`/`ctrl+y` | scroll one line |
-| `ctrl+d`/`ctrl+u` | scroll half a page; the caret keeps its screen row |
-| PgDn/PgUp | scroll a page, the same way |
+| `e`/`ctrl+e`, `ctrl+y` | scroll one line down, up |
+| `d`/`ctrl+d`, `u`/`ctrl+u` | scroll half a page down, up; the caret keeps its screen row |
+| Space/`ctrl+f`/PgDn, `ctrl+b`/PgUp | scroll a page down, up, the same way |
 | `v`/`V` | start a character or line selection; `y` copies it, Esc or `q` cancels |
 | `}`/`{` | next or previous block; the caret goes to its first line |
 | `]]`/`[[` | next or previous prompt, scrolled to the top |
-| `gg`/`G` | top and bottom; Home and End too |
+| `gg`/`G` | top and bottom; Home/End and `<`/`>` too |
 | `gf` | open a Read, Edit or Write's file in the editor at the line it touched |
 | Enter, click | toggle the block |
 | `o`/`x` | expand or collapse the block |
 | `O`/`X` | expand or collapse every block of the cursor block's kind, or every call to its tool |
 | `E`/`C` | expand or collapse every block |
 | `f` | cycle the filter: all, read-only, changes |
-| `u` | show or hide token usage lines |
+| `U` | show or hide token usage lines |
 | `t` | show or hide times: a prompt's local time, a call's duration, and the gap before either when over 5 s |
 | `-` | the outline: a menu of every prompt; `j`/`k` and Enter jump, Esc, `q` or `-` close |
 | `/`, `n`/`N` | find by regular expression, next and previous match |

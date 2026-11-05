@@ -237,7 +237,7 @@ def test_usage_toggle_and_flag(transcript, capsys):
     async def script(app, view, pilot):
         usage = [i for i, b in enumerate(view.blocks) if b.kind == "usage"]
         before = view.virtual_size.height
-        await pilot.press("u")
+        await pilot.press("U")
         assert not any(view.shown[i] for i in usage)
         assert all(view._strips(i) == [] for i in usage)
         assert view.virtual_size.height == before - len(usage)
@@ -247,7 +247,7 @@ def test_usage_toggle_and_flag(transcript, capsys):
         for _ in range(12):
             await pilot.press("right_curly_bracket")
             assert view.shown[view.cursor]
-        await pilot.press("u")
+        await pilot.press("U")
         assert all(view.shown)
     run_view(transcript, script, size=(100, 30))
     assert main([str(transcript), "--export", "-", "--no-usage"]) == 0
@@ -423,6 +423,41 @@ def test_caret_through_multiline_prompt(tmp_path):
     run_view(path, script)
 
 
+def test_less_keys_match_their_ctrl_forms(long_transcript):
+    async def script(app, view, pilot):
+        await pilot.press("E")
+        for plain, ctrl in (("d", "ctrl+d"), ("space", "ctrl+f"), ("e", "ctrl+e")):
+            await pilot.press(plain)
+            once = (view.scroll_offset.y, view.caret_line)
+            await pilot.press("home", ctrl)
+            assert (view.scroll_offset.y, view.caret_line) == once and once[0] > 0
+            await pilot.press("home")
+        await pilot.press("G", "u")
+        once = (view.scroll_offset.y, view.caret_line)
+        await pilot.press("G", "ctrl+u")
+        assert (view.scroll_offset.y, view.caret_line) == once
+        await pilot.press("less_than_sign")
+        assert view.cursor == 0
+        await pilot.press("greater_than_sign")
+        assert view.cursor == len(view.blocks) - 1
+    run_view(long_transcript, script, size=(80, 20))
+
+
+def test_only_ctrl_c_quits(transcript):
+    async def script(app, view, pilot):
+        await pilot.press("v")
+        await pilot.press("q")
+        assert view.mode == "normal" and app.is_running
+        await pilot.press("V", "escape")
+        assert view.mode == "normal"
+        await pilot.press("q", "escape", "ctrl+q")
+        await pilot.pause()
+        assert app.is_running
+        await pilot.press("ctrl+c")
+        await pilot.pause()
+        assert not app.is_running
+    run_view(transcript, script)
+
 
 def test_open_and_close_blocks(transcript):
     async def script(app, view, pilot):
@@ -444,20 +479,3 @@ def test_open_and_close_blocks(transcript):
         await pilot.press("X")
         assert blocks[thinking].collapsed
     run_view(transcript, script, size=(100, 30))
-
-
-
-def test_only_ctrl_c_quits(transcript):
-    async def script(app, view, pilot):
-        await pilot.press("v")
-        await pilot.press("q")
-        assert view.mode == "normal" and app.is_running
-        await pilot.press("V", "escape")
-        assert view.mode == "normal"
-        await pilot.press("q", "escape", "ctrl+q")
-        await pilot.pause()
-        assert app.is_running
-        await pilot.press("ctrl+c")
-        await pilot.pause()
-        assert not app.is_running
-    run_view(transcript, script)

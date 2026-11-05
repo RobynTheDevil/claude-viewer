@@ -16,15 +16,18 @@ an item, and the claim moves to `x` on their word.
 Each open defect has a report in [issues/](issues/) carrying the reproduction, the root
 cause and the candidate fixes. This list is the status; the report is the record.
 
+None open.
+
+## enhancements:
+
+- less paging keys: `d`/`u` half page, Space page down, `e` line down, `<`/`>` top and
+  bottom. Usage moves to `U`.
+    - Test: `d` and `ctrl+d` land on the same place, likewise `u`/`ctrl+u`.
 - Only `ctrl+c` quits. `q` and Esc leave visual mode, and otherwise go back to the list or
   do nothing.
     - Test: `claude-viewer <id>`, then `q`, Esc and `ctrl+q` all stay open.
 - `o`/`x` expand and collapse the block, `O`/`X` its tool or kind. Enter still toggles.
     - Test: `o` twice leaves a block open, `X` on a Bash call collapses every Bash.
-
-## enhancements:
-
-None open.
 
 ## back-burner:
 

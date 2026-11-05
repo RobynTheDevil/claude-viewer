@@ -88,20 +88,20 @@ class TranscriptView(ScrollView, can_focus=True):
         Binding("0", "line_start", "Line start", show=False),
         Binding("circumflex_accent", "first_nonblank", "First non-blank", show=False),
         Binding("dollar_sign", "line_end", "Line end", show=False),
-        Binding("ctrl+e", "scroll_rows(1)", "Scroll down", show=False),
+        Binding("ctrl+e,e", "scroll_rows(1)", "Scroll down", show=False),
         Binding("ctrl+y", "scroll_rows(-1)", "Scroll up", show=False),
         Binding("v", "visual('visual')", "Visual", show=False),
         Binding("V", "visual('line')", "Visual line", show=False),
         Binding("y", "yank", "Yank", show=False),
-        Binding("ctrl+d", "page(0.5)", "Half page down", show=False),
-        Binding("ctrl+u", "page(-0.5)", "Half page up", show=False),
-        Binding("pagedown", "page(1)", "Page down", show=False),
-        Binding("pageup", "page(-1)", "Page up", show=False),
+        Binding("ctrl+d,d", "page(0.5)", "Half page down", show=False),
+        Binding("ctrl+u,u", "page(-0.5)", "Half page up", show=False),
+        Binding("pagedown,space,ctrl+f", "page(1)", "Page down", show=False),
+        Binding("pageup,ctrl+b", "page(-1)", "Page up", show=False),
         Binding("right_curly_bracket", "move(1)", "Next block", show=False),
         Binding("left_curly_bracket", "move(-1)", "Previous block", show=False),
-        Binding("home", "jump(0)", "Top", show=False),
-        Binding("G,end", "jump(-1)", "Bottom", show=False),
-        Binding("enter,space", "toggle", "Toggle"),
+        Binding("home,less_than_sign", "jump(0)", "Top", show=False),
+        Binding("G,end,greater_than_sign", "jump(-1)", "Bottom", show=False),
+        Binding("enter", "toggle", "Toggle"),
         Binding("o", "block(False)", "Expand"),
         Binding("x", "block(True)", "Collapse"),
         Binding("O", "group(False)", "Expand tool"),
@@ -109,7 +109,7 @@ class TranscriptView(ScrollView, can_focus=True):
         Binding("E", "every(False)", "Expand all"),
         Binding("C", "every(True)", "Collapse all"),
         Binding("f", "cycle_filter", "Filter"),
-        Binding("u", "toggle_usage", "Usage"),
+        Binding("U", "toggle_usage", "Usage"),
         Binding("t", "toggle_times", "Times"),
     ]
 
@@ -693,7 +693,7 @@ class SessionScreen(Screen):
                 text += f" {view.filter}"
             if self.message:
                 text += f"  {self.message}"
-            text += f"  ·  enter toggle  o/x block  O/X {group}  f filter  u usage  - outline  / find"
+            text += f"  ·  enter toggle  o/x block  O/X {group}  f filter  U usage  - outline  / find"
             text += "  q back" if not self.standalone else "  ctrl+c quit"
         self.query_one("#status", Static).update(Text(text))
 
