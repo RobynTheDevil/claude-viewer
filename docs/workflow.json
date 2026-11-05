@@ -21,11 +21,12 @@
     "closed_marker": "x",
     "report_markers": ["x", "~", "+"],
     "kinds": {"src": "code", "docs": "docs", "tools": "tools"},
-    "wip_tags": "wip*",
+    "wip_refs": "refs/wip",
     "wip_tag_file": "wip-tag",
     "claim_file": "claims",
-    "claim_tags": "claim",
+    "claim_refs": "refs/claims",
     "series": "tools/buildseries.sh {mod} {target}",
+    "version_tag": "v{version}",
     "worktree": {
         "dir": ".worktrees",
         "link": [],
@@ -37,15 +38,15 @@
         "source": "src/{project}",
         "artefact": "/home/robyn/.local/share/uv/tools/{project}/bin/{project}",
         "ignore": [],
-        "record": "<workflow: file the confirmation step writes>",
+        "record": null,
         "build": "tools/build.sh {project} --force",
         "shared": true
     },
     "confirm": {
-        "who": "<workflow: who confirms>",
-        "how": "<workflow: how a change is confirmed>",
-        "summary": "<workflow: command summarising the record>",
-        "follow": "<workflow: command following one scenario in the record>",
-        "evidence": "<workflow: what in the record shows a scenario ran>"
+        "who": "Robyn",
+        "how": "Robyn runs the installed claude-viewer on a real session, tries the item's Test line, and notes the result on the item in todo.md",
+        "summary": null,
+        "follow": null,
+        "evidence": "Robyn's note on the item in todo.md"
     }
 }
