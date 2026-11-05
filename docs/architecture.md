@@ -1,50 +1,61 @@
-<!--
-    Seed instructions, delete this block once the file has real contents.
-
-    This file starts nearly empty and earns its contents. It holds what is true about the
-    external system the repo builds against: the engine, the framework, the host application,
-    the API. A session loads it in full at startup, which is how it stops the same discovery
-    being made twice.
-
-    What belongs here:
-      - The object model, stated once, with the consequence for the work drawn out.
-      - The facts that cost a lot to rediscover, especially the ones that present as a dozen
-        unrelated symptoms.
-      - Where a call is made from, and what the call assumes, with file:line citations.
-      - What the decompile, the docs or the source does NOT cover, under Gaps.
-
-    What does not:
-      - How one project uses it. That goes in the project's source guide.
-      - What was tried and failed. That is a report in docs/<project>/issues.
-      - Restating the external system's own documentation where it is accurate and available.
-
-    The test for a finding belonging here rather than in a project guide: would the next
-    project hit it too. See the `issues` skill, "Generalise before closing".
-
-    Keep the structure below. The headings are the ones that get used.
--->
-
 # Core architecture
 
-<One paragraph: which system this describes, where the source of truth is, and how much of
-it has been read. Name the version.>
+The Claude Code session transcript: one JSONL file per session at
+`~/.claude/projects/<project>/<session-id>.jsonl`, or under `$CLAUDE_CONFIG_DIR` when that is
+set. Read from transcripts written by Claude Code 2.1.301. There is no published schema, so
+everything here is observed and can change with a Claude Code release.
 
 ## The one thing to know first
 
-<The single structural fact that decides most of the work. A table or three bullets, then the
-consequence for a change stated explicitly: to change X, touch A; to change Y, touch B.>
+Most of a transcript is not the conversation. Each line is one record, and only `user` and
+`assistant` records with `isSidechain: false` hold the main thread. In the largest local
+transcript (37 MB), `api-request-blob` records, which copy whole API requests, make up most
+of the bytes.
 
-## <Subsystem>
+| Record starts with | Holds |
+|---|---|
+| `{"type":` | session metadata: `mode`, `ai-title`, `last-prompt`, `cost-state`, `api-request*`, `file-history-*`, `worktree-state`, `queue-operation` |
+| `{"parentUuid":` | `user`, `assistant`, `attachment` and `system` records |
 
-<One section per subsystem that work lands in. Lead with the API or the entry point, cite
-file and line, and state what it guarantees. Then the traps, each as its own bolded claim
-followed by the evidence:>
+To show the conversation, read `user` and `assistant` records. To title a session, read the
+last `ai-title`. The parser skips any line starting `{"type":` without parsing it, which is
+why a 37 MB session parses in 0.07 s.
 
-**<The trap, stated as a fact>.** <What the code actually does, with the citation, and what
-it looks like when you hit it. The symptom first if the symptom is what you will meet.>
+## Project directories
+
+`<project>` is the session's working directory with every character outside `[A-Za-z0-9]`
+replaced by `-`: `/mnt/c/p/x.y/.worktrees/z` becomes `-mnt-c-p-x-y--worktrees-z`. A worktree
+is its own project.
+
+## User and assistant records
+
+An assistant message is split across records: one record per content block, all sharing
+`message.id`. Each repeats `message.usage`; the last one holds the final counts.
+
+**A `uuid` can repeat.** The same record is sometimes written twice. Keep the first.
+
+**`user` records are mostly not prompts.** In order of how often they occur:
+
+- `tool_result` blocks, paired to the call by `tool_use_id`. The record's top-level
+  `toolUseResult` holds the tool's structured result. For Edit and Write it has
+  `structuredPatch`: hunks of `oldStart`, `oldLines`, `newStart`, `newLines` and `lines`, each
+  line prefixed `+`, `-` or a space.
+- `isMeta: true`: text Claude Code injected, such as a loaded skill's body. Not shown.
+- `origin.kind` other than `human`, such as `task-notification` or `peer`: not typed by the
+  person.
+- A slash command: `<command-name>/x</command-name>` with optional `<command-args>`.
+- `<local-command-stdout>`: output of a local command.
+- `<system-reminder>` blocks inside prompt text. Not shown.
+
+**Thinking text is usually empty.** A `thinking` block keeps its `signature`, but `thinking`
+is `""` unless the session recorded it. Empty ones carry nothing to show.
+
+**`isSidechain: true` records are subagent turns.** They are not shown in the main thread.
 
 ## Gaps
 
-- <What is not readable: files not decompiled, assets not extractable, behaviour only
-  observable at runtime.>
-- <What is known to be inaccurate in the extracted source.>
+- Subagent transcripts: where a subagent's own records live and how they link to the
+  `Agent` call that started it has not been read.
+- `attachment` records seen locally are all injected context (`total_tokens_reminder`,
+  `task_reminder`, `environment` and others). The kinds the parser treats as user
+  attachments (`file`, `image`, `pdf`, `directory`) are assumed, not observed.

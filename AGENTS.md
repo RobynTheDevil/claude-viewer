@@ -29,7 +29,7 @@ now. Tracking "this was attempted N times", "the last build", etc. is not releva
     generated or machine-specific.
 
 ## ./src/claude-viewer
-    The viewer for Claude Code session transcripts, with a CLI. Proposed, no code yet.
+    The viewer for Claude Code session transcripts, a Python CLI on Textual and Rich. Working.
     Read docs/claude-viewer/project.md before editing it.
 
 ## ./ref
@@ -47,7 +47,8 @@ now. Tracking "this was attempted N times", "the last build", etc. is not releva
 ## claude-viewer:
 
 ### ./docs/claude-viewer/project.md
-    Source guide for claude-viewer: goals and open design decisions. Read before editing it.
+    Source guide for claude-viewer: invariants, structure, design and build. Read before
+    editing it.
 
 ### ./docs/claude-viewer/todo.md
     Open work on claude-viewer: defects being tested, enhancements, features. Each item links its

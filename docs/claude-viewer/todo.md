@@ -8,7 +8,7 @@ marker is open, `~` in progress, `+` has update note, `x` confirmed and ready fo
 Reasoning is recorded here only while a fix is unconfirmed. Once confirmed it moves to
 [project.md](project.md) and the line moves to [done.md](done.md), reduced to one entry.
 
-<The person> will update with **note** or similar when an item is tested. Only they confirm
+Robyn will update with **note** or similar when an item is tested. Only they confirm
 an item, and the claim moves to `x` on their word.
 
 ## defects:
