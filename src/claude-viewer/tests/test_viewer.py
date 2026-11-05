@@ -104,22 +104,63 @@ def run_view(path, script, size=(80, 12)):
     asyncio.run(run())
 
 
-def test_line_scroll_keeps_cursor_on_screen(long_transcript):
+def test_caret_lines_and_scroll_keep_cursor_on_screen(long_transcript):
     async def script(app, view, pilot):
         await pilot.press("E")
         tall = next(i for i, b in enumerate(view.blocks) if b.kind == "tool")
         view.action_jump(tall)
-        start = view.scroll_offset.y
+        start, line = view.scroll_offset.y, view.caret_line
+        height = view.scrollable_content_region.height
         await pilot.press("j", "j")
-        assert view.scroll_offset.y == start + 2 and view.cursor == tall
-        for _ in range(12):
+        assert view.caret_line == line + 2 and view.cursor == tall
+        for _ in range(height):
             await pilot.press("j")
-        assert view.cursor != tall
-        top = view._offsets[view.cursor]
-        assert top + len(view._strips(view.cursor)) > view.scroll_offset.y
+        assert view.caret_line == line + height + 2
+        assert view.scroll_offset.y + height - 1 == view.caret_line and view.scroll_offset.y > start
+        assert view.cursor == tall
         await pilot.press("right_curly_bracket")
-        assert view.cursor > tall
+        assert view.cursor > tall and view.caret_line == view._offsets[view.cursor]
+        before = view.cursor
+        for _ in range(height + 5):
+            await pilot.press("ctrl+e")
+        assert view.cursor != before
+        assert view.scroll_offset.y <= view.caret_line < view.scroll_offset.y + height
     run_view(long_transcript, script)
+
+
+def test_caret_columns_and_words():
+    from claude_viewer.selection import first_nonblank, marker_len, next_word, prev_word
+    text = "⏺ Bash(git status)"
+    assert next_word(text, 0) == 2 and next_word(text, 2) == 6 and next_word(text, 6) == 7
+    assert prev_word(text, 7) == 6 and prev_word(text, 6) == 2
+    assert first_nonblank("     line 3") == 5
+    assert marker_len("tool", "  ⎿  out") == 5 and marker_len("tool", "     more") == 5
+    assert marker_len("text", "⏺ Fixed") == 2 and marker_len("prompt", "> hi") == 0
+
+
+def test_visual_line_yank(long_transcript, monkeypatch):
+    import claude_viewer.app as app_module
+    copied = []
+    monkeypatch.setattr(app_module, "to_windows_clipboard", lambda text: copied.append(text))
+
+    async def script(app, view, pilot):
+        bash = next(i for i, b in enumerate(view.blocks) if b.kind == "tool")
+        view.action_jump(bash)
+        await pilot.press("enter", "j", "V", "j", "j")
+        assert view.mode == "line"
+        assert "VISUAL LINE" in str(app.screen.query_one("#status").render())
+        await pilot.press("y")
+        assert view.mode == "normal"
+        assert copied == ["line 0\nline 1\nline 2"]
+        assert "3 lines copied" in str(app.screen.query_one("#status").render())
+        await pilot.press("v", "w", "escape")
+        assert view.mode == "normal" and app.is_running
+        await pilot.press("v", "dollar_sign", "y")
+        assert copied[-1] == "line 0"
+        view.action_jump(bash)
+        await pilot.press("w", "v", "w", "y")
+        assert copied[-1] == "Bash("
+    run_view(long_transcript, script, size=(80, 30))
 
 
 def test_half_page_round_trip(long_transcript):

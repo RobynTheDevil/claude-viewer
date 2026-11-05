@@ -68,9 +68,8 @@ added later alongside option 1.
 ## Open Questions
 - Does Windows Terminal accept OSC 52, and is there a size limit? This is untested. With
   `clip.exe` also used, OSC 52 is only a fallback, so this matters only off WSL.
-- How Markdown lists and code blocks indent inside the grid's second column is unverified.
-  The marker-width rule may leave Markdown's own indentation in the copied text, and that
-  may be wanted.
+- How do Markdown lists and code blocks copy? Settled: as rendered, with ` • ` bullets and
+  their indentation kept, since the marker-width rule only drops the grid's first column.
 
 ## Priority
 Medium

@@ -22,6 +22,15 @@ from textual.widgets.option_list import Option
 
 from claude_viewer.editor import editor_command, file_target, local_path
 from claude_viewer.render import render_block, tool_header
+from claude_viewer.selection import (
+    cell_to_index,
+    first_nonblank,
+    marker_len,
+    next_word,
+    overlay,
+    prev_word,
+    to_windows_clipboard,
+)
 from claude_viewer.transcript import Block, Session, SessionInfo, parse
 
 GUTTER = 2
@@ -30,6 +39,8 @@ PLAIN = Segment("  ")
 FILTERS = ("all", "read-only", "changes")
 MATCH = Style(bgcolor="#5f4b00")
 CURRENT_MATCH = Style(bgcolor="#d7af00", color="black")
+CARET = Style(reverse=True)
+SELECTED = Style(bgcolor="#264f78")
 
 
 def searchable(block: Block) -> str:
@@ -67,8 +78,20 @@ class TranscriptView(ScrollView, can_focus=True):
     """
 
     BINDINGS = [
-        Binding("j,down", "scroll_rows(1)", "Line down", show=False),
-        Binding("k,up", "scroll_rows(-1)", "Line up", show=False),
+        Binding("j,down", "caret(1)", "Line down", show=False),
+        Binding("k,up", "caret(-1)", "Line up", show=False),
+        Binding("h,left", "column(-1)", "Left", show=False),
+        Binding("l,right", "column(1)", "Right", show=False),
+        Binding("w", "word(1)", "Next word", show=False),
+        Binding("b", "word(-1)", "Previous word", show=False),
+        Binding("0", "line_start", "Line start", show=False),
+        Binding("circumflex_accent", "first_nonblank", "First non-blank", show=False),
+        Binding("dollar_sign", "line_end", "Line end", show=False),
+        Binding("ctrl+e", "scroll_rows(1)", "Scroll down", show=False),
+        Binding("ctrl+y", "scroll_rows(-1)", "Scroll up", show=False),
+        Binding("v", "visual('visual')", "Visual", show=False),
+        Binding("V", "visual('line')", "Visual line", show=False),
+        Binding("y", "yank", "Yank", show=False),
         Binding("ctrl+d", "page(0.5)", "Half page down", show=False),
         Binding("ctrl+u", "page(-0.5)", "Half page up", show=False),
         Binding("pagedown", "page(1)", "Page down", show=False),
@@ -95,6 +118,7 @@ class TranscriptView(ScrollView, can_focus=True):
     PREFIX_TIMEOUT = 1.0
 
     cursor = reactive(0)
+    mode = reactive("normal")
 
     class Notice(Message):
         def __init__(self, text: str) -> None:
@@ -119,6 +143,10 @@ class TranscriptView(ScrollView, can_focus=True):
         self._scrolling = False
         self._search_text: dict[int, str] = {}
         self.pattern: re.Pattern | None = None
+        self.caret_line = 0
+        self.caret_col = 0
+        self._want_col = 0
+        self.anchor = (0, 0)
 
     def _passes_filter(self, block: Block) -> bool:
         if self.filter == "all" or block.kind in ("prompt", "text"):
@@ -178,8 +206,11 @@ class TranscriptView(ScrollView, can_focus=True):
         if self.blocks:
             anchor = self.cursor
             row = self._offsets[anchor] - self.scroll_offset.y if self._offsets else 0
+            width = self._width
             self._layout()
             self._scroll(self._offsets[anchor] - row)
+            if width != self._width:
+                self._caret_to_block()
 
     def render_line(self, y: int) -> Strip:
         width = self.scrollable_content_region.width
@@ -190,11 +221,142 @@ class TranscriptView(ScrollView, can_focus=True):
         strip = self._strips(i)[line - self._offsets[i]]
         if self.pattern is not None:
             strip = highlight(strip, self.pattern, CURRENT_MATCH if i == self.cursor else MATCH)
+        if self.mode != "normal":
+            span = self._selected_span(line, strip.text)
+            if span is not None:
+                cell = strip.index_to_cell_position
+                strip = overlay(strip, cell(span[0]), max(cell(span[1]), cell(span[0]) + 1), SELECTED)
+        if line == self.caret_line:
+            start = strip.index_to_cell_position(self.caret_col)
+            strip = overlay(strip, start, start + 1, CARET)
         gutter = CURSOR if i == self.cursor else PLAIN
         return Strip([gutter, *strip], GUTTER + strip.cell_length).crop_extend(0, width, None)
 
     def watch_cursor(self) -> None:
         self.refresh()
+
+    def watch_mode(self) -> None:
+        self.refresh()
+
+    def _line_text(self, line: int) -> str:
+        i = self._block_at(line)
+        strips = self._strips(i)
+        return strips[line - self._offsets[i]].text if strips else ""
+
+    def _scroll_to_caret(self) -> None:
+        view = self.scrollable_content_region.height
+        sy = round(self.scroll_offset.y)
+        if self.caret_line < sy:
+            self._scroll(self.caret_line)
+        elif self.caret_line >= sy + view:
+            self._scroll(self.caret_line - view + 1)
+
+    def _put_caret(self, line: int, col: int | None = None, follow: bool = True) -> None:
+        if self._total == 0:
+            return
+        line = max(0, min(line, self._total - 1))
+        text = self._line_text(line)
+        if col is None:
+            col = self._want_col
+        self.caret_line = line
+        self.caret_col = max(0, min(col, len(text) - 1))
+        self.cursor = self._block_at(line)
+        if follow:
+            self._scroll_to_caret()
+        self.refresh()
+
+    def _caret_to_block(self) -> None:
+        if self._offsets:
+            self._want_col = 0
+            self.caret_line = self._offsets[self.cursor]
+            self.caret_col = 0
+            self.refresh()
+
+    def action_caret(self, rows: int) -> None:
+        self._put_caret(self.caret_line + rows)
+
+    def action_column(self, step: int) -> None:
+        self._want_col = max(0, self.caret_col + step)
+        self._put_caret(self.caret_line, self._want_col)
+        self._want_col = self.caret_col
+
+    def action_line_start(self) -> None:
+        self._want_col = 0
+        self._put_caret(self.caret_line, 0)
+
+    def action_first_nonblank(self) -> None:
+        self._want_col = first_nonblank(self._line_text(self.caret_line))
+        self._put_caret(self.caret_line, self._want_col)
+
+    def action_line_end(self) -> None:
+        self._want_col = 1 << 30
+        self._put_caret(self.caret_line)
+
+    def action_word(self, step: int) -> None:
+        line, col = self.caret_line, self.caret_col
+        text = self._line_text(line)
+        found = next_word(text, col) if step > 0 else prev_word(text, col)
+        while found is None:
+            line += step
+            if not 0 <= line < self._total:
+                return
+            text = self._line_text(line)
+            if not text.strip():
+                continue
+            found = first_nonblank(text) if step > 0 else prev_word(text, len(text))
+        self._want_col = found
+        self._put_caret(line, found)
+
+    def action_visual(self, mode: str) -> None:
+        if self.mode == mode:
+            self.mode = "normal"
+        else:
+            if self.mode == "normal":
+                self.anchor = (self.caret_line, self.caret_col)
+            self.mode = mode
+
+    def _selection(self) -> tuple[tuple[int, int], tuple[int, int]]:
+        a, b = sorted([self.anchor, (self.caret_line, self.caret_col)])
+        return a, b
+
+    def _selected_span(self, line: int, text: str) -> tuple[int, int] | None:
+        (l1, c1), (l2, c2) = self._selection()
+        if not l1 <= line <= l2:
+            return None
+        if self.mode == "line":
+            return 0, len(text)
+        start = c1 if line == l1 else 0
+        end = c2 + 1 if line == l2 else len(text)
+        return start, min(end, len(text)) if text else start
+
+    def selected_text(self) -> str:
+        (l1, c1), (l2, c2) = self._selection()
+        out = []
+        for line in range(l1, l2 + 1):
+            text = self._line_text(line)
+            kind = self.blocks[self._block_at(line)].kind
+            start, end = 0, len(text)
+            if self.mode == "visual":
+                if line == l1:
+                    start = c1
+                if line == l2:
+                    end = c2 + 1
+            start = max(start, marker_len(kind, text))
+            out.append(text[start:end].rstrip())
+        return "\n".join(out)
+
+    def action_yank(self) -> None:
+        if self.mode == "normal":
+            return
+        text = self.selected_text()
+        (l1, c1), _ = self._selection()
+        self.app.copy_to_clipboard(text)
+        to_windows_clipboard(text)
+        lines = text.count("\n") + 1
+        col = c1 if self.mode == "visual" else self.caret_col
+        self.mode = "normal"
+        self._put_caret(l1, col)
+        self.post_message(self.Notice(f"{lines} line{'s' * (lines != 1)} copied"))
 
     def _scroll(self, y: int) -> None:
         self._scrolling = True
@@ -224,12 +386,10 @@ class TranscriptView(ScrollView, can_focus=True):
             return
         sy = round(self.scroll_offset.y)
         view = self.scrollable_content_region.height
-        top = self._offsets[self.cursor]
-        bottom = top + len(self._strips(self.cursor))
-        if bottom <= sy:
-            self.cursor = self._block_at(sy)
-        elif top >= sy + view:
-            self.cursor = self._block_at(sy + view - 1)
+        if self.caret_line < sy:
+            self._put_caret(sy, follow=False)
+        elif self.caret_line >= sy + view:
+            self._put_caret(sy + view - 1, follow=False)
 
     def watch_scroll_y(self, old_value: float, new_value: float) -> None:
         super().watch_scroll_y(old_value, new_value)
@@ -246,11 +406,10 @@ class TranscriptView(ScrollView, can_focus=True):
             return
         view = self.scrollable_content_region.height
         sy = self.scroll_offset.y
-        row = max(0, min(self._offsets[self.cursor] - sy, view - 1))
         rows = int(view * fraction) or (1 if fraction > 0 else -1)
         self._scroll(sy + rows)
-        self.cursor = self._block_at(self.scroll_offset.y + row)
-        self._clamp_cursor()
+        moved = self.scroll_offset.y - sy
+        self._put_caret(self.caret_line + (moved or rows))
 
     def action_prompt(self, step: int) -> None:
         if not self.prompts:
@@ -268,6 +427,7 @@ class TranscriptView(ScrollView, can_focus=True):
     def go_prompt(self, k: int) -> None:
         self.cursor = self.prompts[k]
         self._scroll(self._offsets[self.cursor])
+        self._caret_to_block()
 
     @property
     def current_prompt(self) -> int:
@@ -298,6 +458,11 @@ class TranscriptView(ScrollView, can_focus=True):
         self._pending_timer = None
 
     async def on_key(self, event: events.Key) -> None:
+        if event.key == "escape" and self.mode != "normal":
+            self.mode = "normal"
+            event.stop()
+            event.prevent_default()
+            return
         if self._pending is not None:
             first = self._pending
             if self._pending_timer is not None:
@@ -322,6 +487,7 @@ class TranscriptView(ScrollView, can_focus=True):
         self._layout()
         self._scroll(self._offsets[anchor] - row)
         self._show_cursor()
+        self._caret_to_block()
 
     def _set_collapsed(self, indexes, collapsed: bool) -> None:
         changed = []
@@ -339,6 +505,7 @@ class TranscriptView(ScrollView, can_focus=True):
             if i is not None:
                 self.cursor = i
             self._show_cursor()
+            self._caret_to_block()
 
     def action_jump(self, index: int) -> None:
         if self.blocks:
@@ -349,6 +516,7 @@ class TranscriptView(ScrollView, can_focus=True):
             if i is not None:
                 self.cursor = i
             self._show_cursor()
+            self._caret_to_block()
 
     @property
     def visible_count(self) -> int:
@@ -371,6 +539,7 @@ class TranscriptView(ScrollView, can_focus=True):
             self.cursor = anchor
             self._scroll(self._offsets[anchor] - max(0, row))
             self._show_cursor()
+            self._caret_to_block()
 
     def action_cycle_filter(self) -> None:
         self.filter = FILTERS[(FILTERS.index(self.filter) + 1) % len(FILTERS)]
@@ -403,10 +572,12 @@ class TranscriptView(ScrollView, can_focus=True):
         line = self.scroll_offset.y + event.y
         if self._offsets and line < self._total:
             i = bisect_right(self._offsets, line) - 1
-            if i == self.cursor:
+            if i == self.cursor and self.mode == "normal":
                 self.action_toggle()
             else:
-                self.cursor = i
+                col = cell_to_index(self._line_text(line), max(0, event.x - GUTTER))
+                self._want_col = col
+                self._put_caret(line, col)
 
     def set_pattern(self, pattern: re.Pattern | None) -> None:
         self.pattern = pattern
@@ -428,6 +599,7 @@ class TranscriptView(ScrollView, can_focus=True):
                 self.cursor = i
                 self._set_collapsed([i], False)
                 self._show_cursor()
+                self._caret_to_block()
                 return i
         return None
 
@@ -490,6 +662,7 @@ class SessionScreen(Screen):
 
     def on_mount(self) -> None:
         self.watch(self.view, "cursor", self._cursor_moved)
+        self.watch(self.view, "mode", self._update_status)
         self.view.focus()
 
     def _cursor_moved(self, *_) -> None:
@@ -507,6 +680,8 @@ class SessionScreen(Screen):
         else:
             group = view.blocks[view.cursor].group
             text = f"{view.position}/{view.visible_count} [{group}]"
+            if view.mode != "normal":
+                text = ("-- VISUAL LINE --  " if view.mode == "line" else "-- VISUAL --  ") + text
             if view.filter != "all":
                 text += f" {view.filter}"
             if self.message:

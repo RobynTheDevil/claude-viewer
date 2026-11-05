@@ -41,6 +41,8 @@ All under `src/claude-viewer/claude_viewer/`.
 - `export.py`: Markdown export. Tool output and thinking go in `<details>`, diffs in `diff`
   fences.
 - `editor.py`: the file and line a call touched, and the editor command that opens it.
+- `selection.py`: caret word motions, marker widths, the selection overlay and the
+  Windows clipboard.
 - `cli.py`: arguments and dispatch.
 
 Tests are in `src/claude-viewer/tests/`. `conftest.py` builds a small transcript with every
@@ -57,14 +59,17 @@ record kind the parser handles.
 | Shown collapsed | Thinking blocks, attachments (one line with the file name), per-message token usage and model. |
 | Not shown | System reminders, `isMeta` text, subagent turns. |
 
-Keys, less/vim style. Arrow keys work as `j`/`k`.
+Keys, vim style. Arrow keys work as `h`/`j`/`k`/`l`.
 
 | Key | Action |
 |---|---|
-| `j`/`k` | scroll one line |
-| `ctrl+d`/`ctrl+u` | scroll half a page; the cursor keeps its screen row |
+| `j`/`k` | move the caret a line; the view scrolls at its edge |
+| `h`/`l`, `w`/`b`, `0`/`^`/`$` | move the caret along the line, by word, or to its start, first non-blank or end |
+| `ctrl+e`/`ctrl+y` | scroll one line |
+| `ctrl+d`/`ctrl+u` | scroll half a page; the caret keeps its screen row |
 | PgDn/PgUp | scroll a page, the same way |
-| `}`/`{` | next or previous block |
+| `v`/`V` | start a character or line selection; `y` copies it, Esc cancels |
+| `}`/`{` | next or previous block; the caret goes to its first line |
 | `]]`/`[[` | next or previous prompt, scrolled to the top |
 | `gg`/`G` | top and bottom; Home and End too |
 | `gf` | open a Read, Edit or Write's file in the editor at the line it touched |
@@ -76,11 +81,23 @@ Keys, less/vim style. Arrow keys work as `j`/`k`.
 | `t` | show or hide times: a prompt's local time, a call's duration, and the gap before either when over 5 s |
 | `-` | the outline: a menu of every prompt; `j`/`k` and Enter jump, Esc, `q` or `-` close |
 | `/`, `n`/`N` | find by regular expression, next and previous match |
-| Esc | clear the match highlights, or back when there are none |
+| Esc | leave visual mode, else clear the match highlights, else back |
 | `q` | back, or quit |
 
-The block cursor stays on screen: any scroll that would leave it off moves it to the first
-visible block going down or the last going up. Two-key motions go through a prefix handler
+**The caret is the cursor.** Normal mode always shows a caret, a line and a character
+index into that line's strip. The block cursor is the block holding it, so the status line,
+Enter and `e`/`c` act on that block. A scroll by `ctrl+e`, page or wheel that would take the
+caret off screen moves it to the nearest visible line. A block motion, a toggle or a filter
+change puts the caret on the cursor block's first line. The caret and the selection are
+drawn per line in `render_line`.
+
+`y` copies the selection as drawn, a wrapped line as its own line, without the gutter or
+the `⏺ ` and `  ⎿  ` markers and with trailing spaces removed. Rendered Markdown copies
+with its bullets and indentation. The text goes to `App.copy_to_clipboard` (OSC 52) and,
+under WSL, to `clip.exe` as UTF-16 LE with CRLF line ends and no BOM; a BOM is kept as a
+character in the pasted text.
+
+Two-key motions go through a prefix handler
 in `TranscriptView.on_key`; a first key followed by anything else, or by nothing for 1 s,
 does nothing.
 
