@@ -1,16 +1,11 @@
 # claude-viewer
 
-A viewer for Claude Code session transcripts, for Robyn. It replaces Mantra, which falls short,
-and other viewers, which are too basic. Working: the first version is built and installed
-with `tools/build.sh claude-viewer`.
+A terminal viewer for Claude Code session transcripts, for Robyn, replacing Mantra. It shows a
+session the way Claude Code's detailed `/resume` view does, adds colored diffs and expand or
+collapse of every call to one tool, and exports to Markdown. Working: built and installed with
+`tools/build.sh claude-viewer`.
 
 Open work is in [todo.md](todo.md).
-
-## Goals
-
-- Colored diff output for commands that change files.
-- Expand and collapse all similar commands at once.
-- A CLI.
 
 ## Invariants
 
@@ -39,65 +34,38 @@ All under `src/claude-viewer/claude_viewer/`.
 Tests are in `src/claude-viewer/tests/`. `conftest.py` builds a small transcript with every
 record kind the parser handles.
 
-## Design
+## Behaviour
 
-A simple terminal CLI. Its output matches the detailed transcript view Claude Code shows
-for a session opened with `/resume`, so a session reads the way it did in Claude Code. The
-goals above go on top of that view.
+| | |
+|---|---|
+| Command | `claude-viewer` |
+| Opening | No argument: a picker of the current directory's project sessions, like `/resume`; `--all` lists every project. A session ID, ID prefix or `.jsonl` path opens that session. |
+| Default view | Prompts and replies in full, each tool call on one line with its output collapsed, file-edit diffs open. |
+| Similar calls | Calls to the same tool: every Bash, every Read, every Edit. `e`/`c` act on them together. |
+| Shown collapsed | Thinking blocks, attachments (one line with the file name), per-message token usage and model. |
+| Not shown | System reminders, `isMeta` text, subagent turns. |
 
-### Opening a session
+Keys, less/vim style: `j`/`k` move a block, `/` finds, `n`/`N` step through matches, `g`/`G`
+go to top and bottom, Enter or a click toggles a block, `e`/`c` expand or collapse every call
+of the selected block's tool, `E`/`C` every block, `q` goes back or quits. Arrow keys also
+work. The reports in [todo.md](todo.md) change several of these.
 
-With no argument, a picker lists sessions like `/resume` does, scoped to the current
-directory's project. A flag widens it to every project. A session ID or `.jsonl` path opens
-that session directly.
-
-### Default view
-
-Matches `/resume`: prompts and replies in full, each tool call on one line with its output
-collapsed, and file-edit diffs open.
-
-### Similar commands
-
-Calls are similar when they use the same tool: every Bash call, every Read, every Edit.
-Expand all and collapse all act on one tool's calls.
-
-### Hidden content
-
-Shown collapsed: thinking blocks, attachments (one placeholder line with the file name) and
-per-turn token usage with the model name. System reminders are not shown.
-
-### Keys
-
-less/vim style: `j`/`k` move, `/` finds, `n`/`N` step through matches, `g`/`G` go to top and
-bottom, Enter or a click toggles a block, `e`/`c` expand or collapse every call of the
-selected block's tool, `E`/`C` every block, `q` goes back or quits. Arrow keys also work.
-
-### Command
-
-`claude-viewer`.
-
-### First version
-
-The view above, plus export of a session to Markdown, with diffs in `diff` fences. HTML
-export, search across sessions, live follow and nested subagent transcripts come later.
+Not built and not yet in the todo: HTML export, search across sessions, live follow, nested
+subagent transcripts.
 
 ## Stack
 
-Python, with Textual for the interactive view and Rich for rendering. Packaged with `uv` and
-installed with `uv tool install`.
+Python with Textual for the interactive view and Rich for rendering, packaged with `uv`.
+Chosen over Rust because Python 3.14 and `uv` are installed here and Rust is not, and
+because speed is not the limit at this data size:
 
-- Rich renders the transcript markers (`⏺`, `⎿`), syntax-highlighted code and colored
-  unified diffs. Edit results in the transcript carry `structuredPatch`, so diffs come from
-  data and are not recomputed.
-- Textual gives collapsible blocks and key bindings, which expand/collapse all similar
-  commands needs. A plain `--print` mode writes the same output through Rich alone, for
-  pipes and `less -R`.
-- Python 3.14 and `uv` are installed here. Go and Rust are not.
-- Search across sessions shells out to `rg` and parses only the matching lines. Python
-  filtering and parsing every transcript on this machine (177 files, largest 37 MB) takes
-  0.8 s, measured. Rust is the move only if search over a full history gets past about 1 s.
-- The session view draws only the lines on screen. The largest session (1,068 blocks)
-  opens in 0.8 s and expands fully in 1.2 s, measured.
+- Filtering and parsing every local transcript (177 files, largest 37 MB) in Python takes
+  0.8 s, measured. Search across sessions is to shell out to `rg`. Move it to Rust only if
+  search over a full history passes about 1 s.
+- The largest session (1,068 blocks) opens in 0.8 s and expands fully in 1.2 s, measured.
+- Edit results carry `structuredPatch`, so diffs come from the transcript and are not
+  recomputed.
+- `--print` writes the default view through Rich alone, for pipes and `less -R`.
 
 ## Build and deploy
 
