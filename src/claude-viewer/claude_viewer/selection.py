@@ -22,6 +22,10 @@ def cell_to_index(text: str, cell: int) -> int:
     return len(text)
 
 
+def index_to_cell(text: str, index: int) -> int:
+    return cell_len(text[:index])
+
+
 def _kind(ch: str) -> int:
     if ch.isspace():
         return 0

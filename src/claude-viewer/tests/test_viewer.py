@@ -1,5 +1,6 @@
 import asyncio
 import io
+import json
 
 from rich.console import Console
 
@@ -400,3 +401,23 @@ def test_times_toggle_in_view(long_transcript):
         await pilot.press("t")
         assert view._strips(1)[0].text == first
     run_view(long_transcript, script, size=(100, 30))
+
+
+def test_caret_through_multiline_prompt(tmp_path):
+    path = tmp_path / "33333333-2222-3333-4444-555555555555.jsonl"
+    rec = {"parentUuid": None, "isSidechain": False, "type": "user", "uuid": "u1",
+           "message": {"role": "user", "content": "first line\n\nthird line\n"}}
+    path.write_text(json.dumps(rec) + "\n", encoding="utf-8")
+
+    async def script(app, view, pilot):
+        for _ in range(4):
+            await pilot.press("l", "j")
+        await pilot.pause()
+        assert view.caret_line == view._total - 1
+        await pilot.press("g", "g", "v")
+        for _ in range(4):
+            await pilot.press("j")
+        await pilot.pause()
+        assert view.mode == "visual"
+
+    run_view(path, script)

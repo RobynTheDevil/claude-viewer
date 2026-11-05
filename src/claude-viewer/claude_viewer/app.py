@@ -25,6 +25,7 @@ from claude_viewer.render import render_block, tool_header
 from claude_viewer.selection import (
     cell_to_index,
     first_nonblank,
+    index_to_cell,
     marker_len,
     next_word,
     overlay,
@@ -54,8 +55,8 @@ def compile_query(query: str) -> re.Pattern:
 
 
 def highlight(strip: Strip, pattern: re.Pattern, style: Style) -> Strip:
-    cell = strip.index_to_cell_position
-    spans = [(cell(m.start()), cell(m.end())) for m in pattern.finditer(strip.text) if m.end() > m.start()]
+    text = strip.text
+    spans = [(index_to_cell(text, m.start()), index_to_cell(text, m.end())) for m in pattern.finditer(text) if m.end() > m.start()]
     if not spans:
         return strip
     cuts = sorted({c for span in spans for c in span} | {strip.cell_length})
@@ -224,10 +225,10 @@ class TranscriptView(ScrollView, can_focus=True):
         if self.mode != "normal":
             span = self._selected_span(line, strip.text)
             if span is not None:
-                cell = strip.index_to_cell_position
-                strip = overlay(strip, cell(span[0]), max(cell(span[1]), cell(span[0]) + 1), SELECTED)
+                start, end = index_to_cell(strip.text, span[0]), index_to_cell(strip.text, span[1])
+                strip = overlay(strip, start, max(end, start + 1), SELECTED)
         if line == self.caret_line:
-            start = strip.index_to_cell_position(self.caret_col)
+            start = index_to_cell(strip.text, self.caret_col)
             strip = overlay(strip, start, start + 1, CARET)
         gutter = CURSOR if i == self.cursor else PLAIN
         return Strip([gutter, *strip], GUTTER + strip.cell_length).crop_extend(0, width, None)

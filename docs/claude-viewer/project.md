@@ -17,6 +17,8 @@ Open work is in [todo.md](todo.md).
   wide, and the next resize re-renders every block.
 - **Per-line overlays are drawn in `render_line`, never cached.** Match highlights and the
   gutter go on the strip as it is drawn, so a new query or a cursor move re-renders nothing.
+  Map a character index to a cell with `selection.index_to_cell`, not Textual's
+  `Strip.index_to_cell_position`, which raises on the empty strip a blank line renders as.
 - **Syntax colors are foreground only.** Pygments themes put their background on every
   token, which covers the diff's add and remove backgrounds. `highlight_lines` keeps each
   token's color, bold and italic and nothing else.
