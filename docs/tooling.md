@@ -35,7 +35,8 @@ A fresh tree cannot compile: everything the build needs is gitignored, so the ne
 none of it. The `worktree` section of `docs/workflow.json` says what `wf new` links, copies
 and runs; this section says why, for anything that is not obvious:
 
-    <why each copy cannot be a link, and what each run command is for>
+Nothing. `uv run` in `tools/build.sh` makes the tree's own `src/<project>/.venv` from
+`uv.lock` on the first build, so the `worktree` section links and copies nothing.
 
 Copying rather than linking is sometimes forced: a build that runs under a different
 subsystem or platform layer cannot follow the host's symlinks.

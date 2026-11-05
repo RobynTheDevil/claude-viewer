@@ -28,14 +28,14 @@
     "series": "tools/buildseries.sh {mod} {target}",
     "worktree": {
         "dir": ".worktrees",
-        "link": ["<workflow: gitignored path a tree links from the main checkout>"],
-        "copy": ["<workflow: gitignored glob a tree copies, e.g. src/*/lib/*>"],
+        "link": [],
+        "copy": [],
         "run": [],
         "note": ""
     },
     "deploy": {
         "source": "src/{project}",
-        "artefact": "<workflow: glob of the deployed build>",
+        "artefact": "/home/robyn/.local/share/uv/tools/{project}/bin/{project}",
         "ignore": [],
         "record": "<workflow: file the confirmation step writes>",
         "build": "tools/build.sh {project} --force",

@@ -2,14 +2,12 @@
 ref
 
 # Build output and machine-specific build configuration, per project.
-src/*/<output>
-src/*/<machine-specific>
-
-# Generated corpora and artefacts: regenerable, large, or both.
-<generated>
+src/*/.venv
+src/*/dist
 
 # Language and tool caches.
 __pycache__/
+.pytest_cache
 *.pyc
 bin/
 obj/

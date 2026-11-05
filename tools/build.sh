@@ -32,16 +32,20 @@ SRC="$ROOT/$PROJECTS_DIR/$PROJECT"
 [[ -d "$SRC" ]] || { echo "no such project: $SRC" >&2; exit 2; }
 
 # 1. Build. Capture the status before any filtering.
-# <build command here>
-status=$?
+status=0
+uv run --quiet --project "$SRC" --directory "$SRC" pytest -q || status=$?
 [[ $status -eq 0 ]] || { echo "build failed, not deploying" >&2; exit "$status"; }
 
 # 2. Refuse to deploy into something in use, unless forced.
-# <lock check here; print the pid and how to stop it>
+pids="$(pgrep -f "uv/tools/$PROJECT/bin/" || true)"
+if [[ -n "$pids" && $FORCE -eq 0 ]]; then
+    echo "$PROJECT is running (pid $(echo $pids)). Quit it, or pass --force; a running copy keeps the old code until restarted." >&2
+    exit 3
+fi
 
 # 3. Deploy: the artefact, plus whatever the consumer reads alongside it (data, licences,
 #    assets). Note that a deploy overwrites what the repo ships, so anything a user edits
 #    belongs somewhere the deploy does not reach.
-# <copy here>
+uv tool install --quiet --force --reinstall "$SRC"
 
 echo "deployed $PROJECT"
