@@ -15,9 +15,22 @@ A simple terminal CLI. Its output matches the detailed transcript view Claude Co
 for a session opened with `/resume`, so a session reads the way it did in Claude Code. The
 goals above go on top of that view.
 
+## Stack
+
+Python, with Textual for the interactive view and Rich for rendering. Packaged with `uv` and
+installed with `uv tool install`.
+
+- Rich renders the transcript markers (`⏺`, `⎿`), syntax-highlighted code and colored
+  unified diffs. Edit results in the transcript carry `structuredPatch`, so diffs come from
+  data and are not recomputed.
+- Textual gives collapsible blocks and key bindings, which expand/collapse all similar
+  commands needs. A plain `--print` mode writes the same output through Rich alone, for
+  pipes and `less -R`.
+- Python 3.14 and `uv` are installed here. Go and Rust are not.
+
 ## Open design decisions
 
-- **Stack.** The language for the CLI. Settles `tools/build.sh`, the `.gitignore` build
-  patterns and `deploy` in `docs/workflow.json`.
+- **Build and deploy.** What `tools/build.sh` runs, the `.gitignore` build patterns and
+  `deploy` in `docs/workflow.json`. Settled by the first code.
 - **Confirmation.** Who confirms a change works, and how. Settles `confirm` in
   `docs/workflow.json`.
