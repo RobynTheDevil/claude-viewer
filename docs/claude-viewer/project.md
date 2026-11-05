@@ -27,6 +27,11 @@ installed with `uv tool install`.
   commands needs. A plain `--print` mode writes the same output through Rich alone, for
   pipes and `less -R`.
 - Python 3.14 and `uv` are installed here. Go and Rust are not.
+- Search across sessions shells out to `rg` and parses only the matching lines. Python
+  filtering and parsing every transcript on this machine (177 files, largest 37 MB) takes
+  0.8 s, measured. Rust is the move only if search over a full history gets past about 1 s.
+- A session view renders lazily, one visible block at a time. Rendering a 37 MB session
+  eagerly is slow in any language.
 
 ## Open design decisions
 
