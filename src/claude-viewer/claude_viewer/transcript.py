@@ -36,6 +36,7 @@ class Block:
     result: str | None = None
     is_error: bool = False
     patch: list | None = None
+    file: dict | None = None
     usage: dict | None = None
     model: str = ""
     msg_id: str = ""
@@ -204,6 +205,8 @@ class _Parser:
             return
         block.result = _result_text(item.get("content"))
         block.is_error = bool(item.get("is_error"))
+        if isinstance(extra, dict) and isinstance(extra.get("file"), dict):
+            block.file = extra["file"]
         if isinstance(extra, dict) and extra.get("structuredPatch"):
             block.patch = extra["structuredPatch"]
             block.collapsed = False

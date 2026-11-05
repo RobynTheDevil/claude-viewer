@@ -43,8 +43,8 @@ suspend and has no editor-argument rules, but it's a step slower.
 - `docs/claude-viewer/project.md` (Keys)
 
 ## Open Questions
-- Does `nvr --remote-wait` accept `+N`? This is believed but not tested. Settled by one
-  run.
+- Does `nvr --remote-wait` accept `+N`? Settled: yes. Against a headless nvim it opened
+  the file at line 17 and returned once the buffer was deleted.
 
 ## Priority
 Medium

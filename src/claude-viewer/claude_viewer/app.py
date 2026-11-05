@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import re
+import subprocess
 from bisect import bisect_left, bisect_right
+from pathlib import Path
 
 from rich.segment import Segment
 from rich.style import Style
 from rich.text import Text
 from textual import events
-from textual.app import App, ComposeResult
+from textual.app import App, ComposeResult, SuspendNotSupported
 from textual.binding import Binding
 from textual.geometry import Size
 from textual.message import Message
@@ -18,6 +20,7 @@ from textual.strip import Strip
 from textual.widgets import Input, OptionList, Static
 from textual.widgets.option_list import Option
 
+from claude_viewer.editor import editor_command, file_target, local_path
 from claude_viewer.render import render_block, tool_header
 from claude_viewer.transcript import Block, Session, SessionInfo, parse
 
@@ -84,7 +87,7 @@ class TranscriptView(ScrollView, can_focus=True):
     ]
 
     PREFIXES = {
-        "g": {"g": "jump(0)"},
+        "g": {"g": "jump(0)", "f": "open_file"},
         "left_square_bracket": {"left_square_bracket": "prompt(-1)"},
         "right_square_bracket": {"right_square_bracket": "prompt(1)"},
     }
@@ -267,6 +270,26 @@ class TranscriptView(ScrollView, can_focus=True):
     @property
     def current_prompt(self) -> int:
         return max(0, bisect_right(self.prompts, self.cursor) - 1)
+
+    def action_open_file(self) -> None:
+        if not self.blocks:
+            return
+        target = file_target(self.blocks[self.cursor])
+        if target is None:
+            return
+        path = local_path(target[0])
+        if not Path(path).is_file():
+            self.post_message(self.Notice(f"no such file: {path}"))
+            return
+        command = editor_command(path, target[1])
+        try:
+            with self.app.suspend():
+                subprocess.run(command)
+        except SuspendNotSupported:
+            self.post_message(self.Notice("cannot suspend here: " + " ".join(command)))
+        except OSError as err:
+            self.post_message(self.Notice(f"{command[0]}: {err.strerror}"))
+        self.refresh()
 
     def _clear_pending(self) -> None:
         self._pending = None

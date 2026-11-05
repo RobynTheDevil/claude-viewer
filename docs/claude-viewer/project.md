@@ -34,6 +34,7 @@ All under `src/claude-viewer/claude_viewer/`.
   `TranscriptView`, the status line and the find box.
 - `export.py`: Markdown export. Tool output and thinking go in `<details>`, diffs in `diff`
   fences.
+- `editor.py`: the file and line a call touched, and the editor command that opens it.
 - `cli.py`: arguments and dispatch.
 
 Tests are in `src/claude-viewer/tests/`. `conftest.py` builds a small transcript with every
@@ -60,6 +61,7 @@ Keys, less/vim style. Arrow keys work as `j`/`k`.
 | `}`/`{` | next or previous block |
 | `]]`/`[[` | next or previous prompt, scrolled to the top |
 | `gg`/`G` | top and bottom; Home and End too |
+| `gf` | open a Read, Edit or Write's file in the editor at the line it touched |
 | Enter, click | toggle the block |
 | `e`/`c` | expand or collapse every call to the cursor block's tool |
 | `E`/`C` | expand or collapse every block |
@@ -88,6 +90,11 @@ settings file exists; an alias carries the flag.
 The outline is an `OptionList` above the status line, at most 10 rows. It changes only the
 view's height, so opening it re-renders nothing. It opens on the prompt containing the
 cursor.
+
+`gf` suspends the viewer and runs `$VISUAL`, then `$EDITOR`, then `nvim`, then `less`, with
+`+N path`, or `-g path:N` for VS Code. The line is an Edit's first changed line, a Read's
+`offset` or `startLine`, and 1 for a Write. A Windows path goes through `wslpath`. `nvr
+--remote-wait +N` lands on line N and returns when the buffer is closed.
 
 Search is a Python regular expression with smart case: it ignores case unless the query has
 an uppercase letter. It matches a block's text, its header as drawn (`Bash(git status)`),

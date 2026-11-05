@@ -250,3 +250,48 @@ def test_outline_menu(long_transcript):
         await pilot.press("minus", "minus")
         assert not outline.display
     run_view(long_transcript, script, size=(80, 30))
+
+
+def test_file_target_lines(transcript):
+    from claude_viewer.editor import file_target
+    from claude_viewer.transcript import Block
+    session = parse(transcript)
+    assert file_target(session.blocks[5]) == ("/w/widget.py", 5)
+    assert file_target(session.blocks[3]) is None
+    assert file_target(Block("tool", tool="Read", input={"file_path": "/a", "offset": 40})) == ("/a", 40)
+    assert file_target(Block("tool", tool="Read", input={"file_path": "/a"}, file={"startLine": 7})) == ("/a", 7)
+    assert file_target(Block("tool", tool="Read", input={"file_path": "/a"})) == ("/a", 1)
+    write = Block("tool", tool="Write", input={"file_path": "/a"}, patch=[{"newStart": 9, "lines": ["+x"]}])
+    assert file_target(write) == ("/a", 1)
+
+
+def test_editor_command():
+    from claude_viewer.editor import editor_command
+    assert editor_command("/f", 5, {"EDITOR": "nvr --remote-wait"}) == ["nvr", "--remote-wait", "+5", "/f"]
+    assert editor_command("/f", 5, {"VISUAL": "code --wait", "EDITOR": "vim"}) == ["code", "--wait", "-g", "/f:5"]
+    assert editor_command("/f", 5, {})[1:] == ["+5", "/f"]
+
+
+def test_gf_opens_or_reports(transcript, tmp_path, monkeypatch):
+    import claude_viewer.app as app_module
+    ran = []
+    monkeypatch.setattr(app_module.subprocess, "run", lambda cmd, *a, **k: ran.append(cmd))
+    monkeypatch.setenv("EDITOR", "vim")
+    monkeypatch.delenv("VISUAL", raising=False)
+    target = tmp_path / "widget.py"
+    target.write_text("a\nb\nc\nd\ne\nx = 2\n")
+
+    async def script(app, view, pilot):
+        view.action_jump(5)
+        await pilot.press("g", "f")
+        await pilot.pause()
+        assert "no such file: /w/widget.py" in str(app.screen.query_one("#status").render())
+        view.blocks[5].input["file_path"] = str(target)
+        await pilot.press("g", "f")
+        await pilot.pause()
+        status = str(app.screen.query_one("#status").render())
+        assert ran == [["vim", "+5", str(target)]] or f"vim +5 {target}" in status
+        view.action_jump(3)
+        await pilot.press("g", "f")
+        assert view.cursor == 3
+    run_view(transcript, script, size=(100, 30))
