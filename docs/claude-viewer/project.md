@@ -15,6 +15,27 @@ A simple terminal CLI. Its output matches the detailed transcript view Claude Co
 for a session opened with `/resume`, so a session reads the way it did in Claude Code. The
 goals above go on top of that view.
 
+### Opening a session
+
+With no argument, a picker lists sessions like `/resume` does, scoped to the current
+directory's project. A flag widens it to every project. A session ID or `.jsonl` path opens
+that session directly.
+
+### Default view
+
+Matches `/resume`: prompts and replies in full, each tool call on one line with its output
+collapsed, and file-edit diffs open.
+
+### Similar commands
+
+Calls are similar when they use the same tool: every Bash call, every Read, every Edit.
+Expand all and collapse all act on one tool's calls.
+
+### First version
+
+The view above, plus export of a session to Markdown or HTML. Search across sessions, live
+follow and nested subagent transcripts come later.
+
 ## Stack
 
 Python, with Textual for the interactive view and Rich for rendering. Packaged with `uv` and
