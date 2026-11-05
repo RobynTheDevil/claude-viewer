@@ -138,9 +138,9 @@ because speed is not the limit at this data size:
 - Filtering and parsing every local transcript (177 files, largest 37 MB) in Python takes
   0.8 s, measured. Search across sessions is to shell out to `rg`. Move it to Rust only if
   search over a full history passes about 1 s.
-- The largest session (1,068 blocks) opens in 1.6 s and expands fully in 2.0 s, measured
-  from the worktree on `/mnt/c`. Of the open, 0.23 s is highlighting its 1,809 diff lines
-  and 0.26 s loading the two lexers.
+- The largest session (1,068 blocks) opens in 1.4 s and expands fully in 1.9 s, measured
+  on the installed build. Of the open, 0.23 s is highlighting its 1,809 diff lines and up
+  to 0.26 s loading the two lexers.
 - Edit results carry `structuredPatch`, so diffs come from the transcript and are not
   recomputed.
 - `--print` writes the default view through Rich alone, for pipes and `less -R`.
