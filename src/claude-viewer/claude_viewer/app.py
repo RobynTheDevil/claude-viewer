@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from bisect import bisect_left, bisect_right
 
 from rich.segment import Segment
@@ -17,18 +18,40 @@ from textual.strip import Strip
 from textual.widgets import Input, OptionList, Static
 from textual.widgets.option_list import Option
 
-from claude_viewer.render import render_block
+from claude_viewer.render import render_block, tool_header
 from claude_viewer.transcript import Block, Session, SessionInfo, parse
 
 GUTTER = 2
 CURSOR = Segment("▌ ", Style(color="cyan", bold=True))
 PLAIN = Segment("  ")
+MATCH = Style(bgcolor="#5f4b00")
+CURRENT_MATCH = Style(bgcolor="#d7af00", color="black")
 
 
 def searchable(block: Block) -> str:
-    parts = [block.text, block.tool, block.result or ""]
+    parts = [block.text, tool_header(block).plain if block.kind == "tool" else "", block.result or ""]
     parts.extend(v for v in block.input.values() if isinstance(v, str))
-    return "\n".join(parts).lower()
+    return "\n".join(parts)
+
+
+def compile_query(query: str) -> re.Pattern:
+    return re.compile(query, 0 if any(c.isupper() for c in query) else re.I)
+
+
+def highlight(strip: Strip, pattern: re.Pattern, style: Style) -> Strip:
+    cell = strip.index_to_cell_position
+    spans = [(cell(m.start()), cell(m.end())) for m in pattern.finditer(strip.text) if m.end() > m.start()]
+    if not spans:
+        return strip
+    cuts = sorted({c for span in spans for c in span} | {strip.cell_length})
+    out = []
+    pos = 0
+    for piece in strip.divide(cuts):
+        if any(start <= pos < end for start, end in spans):
+            piece = Strip(Segment.apply_style(list(piece), None, style), piece.cell_length)
+        out.append(piece)
+        pos += piece.cell_length
+    return Strip.join(out)
 
 
 class TranscriptView(ScrollView, can_focus=True):
@@ -81,6 +104,8 @@ class TranscriptView(ScrollView, can_focus=True):
         self._pending: str | None = None
         self._pending_timer = None
         self._scrolling = False
+        self._search_text: dict[int, str] = {}
+        self.pattern: re.Pattern | None = None
 
     def _strips(self, i: int) -> list[Strip]:
         strips = self._cache.get(i)
@@ -124,6 +149,8 @@ class TranscriptView(ScrollView, can_focus=True):
             return Strip.blank(width)
         i = bisect_right(self._offsets, line) - 1
         strip = self._strips(i)[line - self._offsets[i]]
+        if self.pattern is not None:
+            strip = highlight(strip, self.pattern, CURRENT_MATCH if i == self.cursor else MATCH)
         gutter = CURSOR if i == self.cursor else PLAIN
         return Strip([gutter, *strip], GUTTER + strip.cell_length).crop_extend(0, width, None)
 
@@ -270,14 +297,23 @@ class TranscriptView(ScrollView, can_focus=True):
             else:
                 self.cursor = i
 
-    def find(self, query: str, step: int = 1) -> int | None:
-        if not self.blocks or not query:
+    def set_pattern(self, pattern: re.Pattern | None) -> None:
+        self.pattern = pattern
+        self.refresh()
+
+    def _searchable(self, i: int) -> str:
+        text = self._search_text.get(i)
+        if text is None:
+            text = self._search_text[i] = searchable(self.blocks[i])
+        return text
+
+    def find(self, pattern: re.Pattern, step: int = 1) -> int | None:
+        if not self.blocks:
             return None
-        query = query.lower()
         n = len(self.blocks)
         for k in range(1, n + 1):
             i = (self.cursor + step * k) % n
-            if query in searchable(self.blocks[i]):
+            if pattern.search(self._searchable(i)):
                 self.cursor = i
                 self._set_collapsed([i], False)
                 self._show_cursor()
@@ -309,7 +345,8 @@ class SessionScreen(Screen):
         Binding("slash", "search", "Find"),
         Binding("n", "next_match(1)", "Next match", show=False),
         Binding("N", "next_match(-1)", "Previous match", show=False),
-        Binding("q,escape", "close", "Back"),
+        Binding("q", "close", "Back"),
+        Binding("escape", "escape", "Back", show=False),
     ]
 
     def __init__(self, session: Session, standalone: bool) -> None:
@@ -365,17 +402,39 @@ class SessionScreen(Screen):
         event.input.display = False
         self.query_text = event.value
         self.view.focus()
+        if not self.query_text:
+            self._clear_search()
+            return
+        try:
+            pattern = compile_query(self.query_text)
+        except re.error as err:
+            self.message = f"/{self.query_text}: {err}"
+            self._update_status()
+            return
+        self.view.set_pattern(pattern)
         self._search(1)
 
+    def _clear_search(self) -> None:
+        self.view.set_pattern(None)
+        self.message = ""
+        self._update_status()
+
     def _search(self, step: int) -> None:
-        if not self.query_text:
+        pattern = self.view.pattern
+        if pattern is None:
             return
-        found = self.view.find(self.query_text, step)
+        found = self.view.find(pattern, step)
         self.message = f"/{self.query_text}" if found is not None else f"/{self.query_text}: not found"
         self._update_status()
 
     def action_next_match(self, step: int) -> None:
         self._search(step)
+
+    def action_escape(self) -> None:
+        if self.view.pattern is not None and not self.query_one("#find", Input).display:
+            self._clear_search()
+        else:
+            self.action_close()
 
     def action_close(self) -> None:
         find = self.query_one("#find", Input)

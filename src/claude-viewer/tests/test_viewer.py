@@ -153,3 +153,39 @@ def test_prompt_jumps(long_transcript):
         await pilot.press("g", "g")
         assert view.cursor == 0
     run_view(long_transcript, script, size=(80, 30))
+
+
+def test_compile_query_smart_case():
+    from claude_viewer.app import compile_query
+    assert compile_query("widget").search("Widget")
+    assert not compile_query("Widget").search("widget")
+    assert compile_query(r"Bash\(git").search("Bash(git status")
+
+
+def test_highlight_marks_matches():
+    from rich.segment import Segment
+    from textual.strip import Strip
+    from claude_viewer.app import MATCH, compile_query, highlight
+    strip = Strip([Segment("⏺ run git and "), Segment("git", None), Segment(" again")])
+    out = highlight(strip, compile_query("git"), MATCH)
+    assert out.text == strip.text
+    styled = "".join(seg.text for seg in out if seg.style and seg.style.bgcolor)
+    assert styled == "gitgit"
+
+
+def test_regex_search_in_view(long_transcript):
+    async def script(app, view, pilot):
+        await pilot.press("slash", *"echo 3-", "enter")
+        assert view.blocks[view.cursor].input["command"].startswith("echo 3-")
+        assert view.pattern is not None
+        await pilot.press("slash", "ctrl+u", *"Bash\\(echo 2", "enter")
+        assert view.blocks[view.cursor].input["command"].startswith("echo 2-")
+        await pilot.press("slash", "ctrl+u", "(", "enter")
+        status = str(app.screen.query_one("#status").render())
+        assert "/(: missing )" in status
+        await pilot.press("slash", "ctrl+u", *"PROMPT", "enter")
+        assert "not found" in str(app.screen.query_one("#status").render())
+        await pilot.press("escape")
+        assert view.pattern is None
+        assert app.screen is not None and app.is_running
+    run_view(long_transcript, script, size=(80, 30))
