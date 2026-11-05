@@ -59,6 +59,7 @@ class TranscriptView(ScrollView, can_focus=True):
     DEFAULT_CSS = """
     TranscriptView {
         overflow-x: hidden;
+        scrollbar-gutter: stable;
     }
     """
 

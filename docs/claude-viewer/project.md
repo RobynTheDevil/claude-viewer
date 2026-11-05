@@ -12,6 +12,9 @@ Open work is in [todo.md](todo.md).
 - **The view is virtual.** `TranscriptView` draws only the lines on screen from a per-block
   cache of rendered strips. Do not mount a widget per block: a 1,000-block session then takes
   seconds to open.
+- **The scrollbar gutter is reserved.** `scrollbar-gutter: stable` keeps the content width
+  fixed whether the scrollbar shows or not. Without it the first layout renders 2 cells too
+  wide, and the next resize re-renders every block.
 - **Per-line overlays are drawn in `render_line`, never cached.** Match highlights and the
   gutter go on the strip as it is drawn, so a new query or a cursor move re-renders nothing.
 - **Tool output can hold ANSI escapes.** The terminal view parses them with
