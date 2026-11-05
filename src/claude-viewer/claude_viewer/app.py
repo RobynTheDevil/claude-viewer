@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from bisect import bisect_right
+from bisect import bisect_left, bisect_right
 
 from rich.segment import Segment
 from rich.style import Style
@@ -9,6 +9,7 @@ from textual import events
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.geometry import Size
+from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import Screen
 from textual.scroll_view import ScrollView
@@ -38,9 +39,15 @@ class TranscriptView(ScrollView, can_focus=True):
     """
 
     BINDINGS = [
-        Binding("j,down", "move(1)", "Next block", show=False),
-        Binding("k,up", "move(-1)", "Previous block", show=False),
-        Binding("g,home", "jump(0)", "Top", show=False),
+        Binding("j,down", "scroll_rows(1)", "Line down", show=False),
+        Binding("k,up", "scroll_rows(-1)", "Line up", show=False),
+        Binding("ctrl+d", "page(0.5)", "Half page down", show=False),
+        Binding("ctrl+u", "page(-0.5)", "Half page up", show=False),
+        Binding("pagedown", "page(1)", "Page down", show=False),
+        Binding("pageup", "page(-1)", "Page up", show=False),
+        Binding("right_curly_bracket", "move(1)", "Next block", show=False),
+        Binding("left_curly_bracket", "move(-1)", "Previous block", show=False),
+        Binding("home", "jump(0)", "Top", show=False),
         Binding("G,end", "jump(-1)", "Bottom", show=False),
         Binding("enter,space", "toggle", "Toggle"),
         Binding("e", "group(False)", "Expand tool"),
@@ -49,15 +56,31 @@ class TranscriptView(ScrollView, can_focus=True):
         Binding("C", "every(True)", "Collapse all"),
     ]
 
+    PREFIXES = {
+        "g": {"g": "jump(0)"},
+        "left_square_bracket": {"left_square_bracket": "prompt(-1)"},
+        "right_square_bracket": {"right_square_bracket": "prompt(1)"},
+    }
+    PREFIX_TIMEOUT = 1.0
+
     cursor = reactive(0)
+
+    class Notice(Message):
+        def __init__(self, text: str) -> None:
+            super().__init__()
+            self.text = text
 
     def __init__(self, blocks: list[Block], **kwargs) -> None:
         super().__init__(**kwargs)
         self.blocks = blocks
+        self.prompts = [i for i, b in enumerate(blocks) if b.kind == "prompt"]
         self._cache: dict[int, list[Strip]] = {}
         self._width = 0
         self._offsets: list[int] = []
         self._total = 0
+        self._pending: str | None = None
+        self._pending_timer = None
+        self._scrolling = False
 
     def _strips(self, i: int) -> list[Strip]:
         strips = self._cache.get(i)
@@ -92,7 +115,7 @@ class TranscriptView(ScrollView, can_focus=True):
             anchor = self.cursor
             row = self._offsets[anchor] - self.scroll_offset.y if self._offsets else 0
             self._layout()
-            self.scroll_to(y=max(0, self._offsets[anchor] - row), animate=False, immediate=True)
+            self._scroll(self._offsets[anchor] - row)
 
     def render_line(self, y: int) -> Strip:
         width = self.scrollable_content_region.width
@@ -107,15 +130,94 @@ class TranscriptView(ScrollView, can_focus=True):
     def watch_cursor(self) -> None:
         self.refresh()
 
+    def _scroll(self, y: int) -> None:
+        self._scrolling = True
+        try:
+            self.scroll_to(y=max(0, y), animate=False, immediate=True)
+        finally:
+            self._scrolling = False
+
+    def _block_at(self, line: int) -> int:
+        line = max(0, min(line, self._total - 1))
+        return bisect_right(self._offsets, line) - 1
+
     def _show_cursor(self) -> None:
         top = self._offsets[self.cursor]
         height = len(self._strips(self.cursor))
         view = self.scrollable_content_region.height
         sy = self.scroll_offset.y
         if top < sy:
-            self.scroll_to(y=top, animate=False, immediate=True)
+            self._scroll(top)
         elif top + min(height, view) > sy + view:
-            self.scroll_to(y=top + min(height, view) - view, animate=False, immediate=True)
+            self._scroll(top + min(height, view) - view)
+
+    def _clamp_cursor(self) -> None:
+        if not self._offsets:
+            return
+        sy = round(self.scroll_offset.y)
+        view = self.scrollable_content_region.height
+        top = self._offsets[self.cursor]
+        bottom = top + len(self._strips(self.cursor))
+        if bottom <= sy:
+            self.cursor = self._block_at(sy)
+        elif top >= sy + view:
+            self.cursor = self._block_at(sy + view - 1)
+
+    def watch_scroll_y(self, old_value: float, new_value: float) -> None:
+        super().watch_scroll_y(old_value, new_value)
+        if not self._scrolling:
+            self._clamp_cursor()
+
+    def action_scroll_rows(self, rows: int) -> None:
+        if self.blocks:
+            self._scroll(self.scroll_offset.y + rows)
+            self._clamp_cursor()
+
+    def action_page(self, fraction: float) -> None:
+        if not self.blocks:
+            return
+        view = self.scrollable_content_region.height
+        sy = self.scroll_offset.y
+        row = max(0, min(self._offsets[self.cursor] - sy, view - 1))
+        rows = int(view * fraction) or (1 if fraction > 0 else -1)
+        self._scroll(sy + rows)
+        self.cursor = self._block_at(self.scroll_offset.y + row)
+        self._clamp_cursor()
+
+    def action_prompt(self, step: int) -> None:
+        if not self.prompts:
+            self.post_message(self.Notice("no prompts"))
+            return
+        if step > 0:
+            k = bisect_right(self.prompts, self.cursor)
+        else:
+            k = bisect_left(self.prompts, self.cursor) - 1
+        if not 0 <= k < len(self.prompts):
+            self.post_message(self.Notice("last prompt" if step > 0 else "first prompt"))
+            return
+        self.cursor = self.prompts[k]
+        self._scroll(self._offsets[self.cursor])
+
+    def _clear_pending(self) -> None:
+        self._pending = None
+        self._pending_timer = None
+
+    async def on_key(self, event: events.Key) -> None:
+        if self._pending is not None:
+            first = self._pending
+            if self._pending_timer is not None:
+                self._pending_timer.stop()
+            self._clear_pending()
+            event.stop()
+            event.prevent_default()
+            action = self.PREFIXES[first].get(event.key)
+            if action:
+                await self.run_action(action)
+        elif event.key in self.PREFIXES:
+            self._pending = event.key
+            self._pending_timer = self.set_timer(self.PREFIX_TIMEOUT, self._clear_pending)
+            event.stop()
+            event.prevent_default()
 
     def _refresh_blocks(self, changed: list[int]) -> None:
         anchor = self.cursor
@@ -123,7 +225,7 @@ class TranscriptView(ScrollView, can_focus=True):
         for i in changed:
             self._cache.pop(i, None)
         self._layout()
-        self.scroll_to(y=max(0, self._offsets[anchor] - row), animate=False, immediate=True)
+        self._scroll(self._offsets[anchor] - row)
         self._show_cursor()
 
     def _set_collapsed(self, indexes, collapsed: bool) -> None:
@@ -230,8 +332,16 @@ class SessionScreen(Screen):
         return self.query_one(TranscriptView)
 
     def on_mount(self) -> None:
-        self.watch(self.view, "cursor", self._update_status)
+        self.watch(self.view, "cursor", self._cursor_moved)
         self.view.focus()
+
+    def _cursor_moved(self, *_) -> None:
+        self.message = ""
+        self._update_status()
+
+    def on_transcript_view_notice(self, event: TranscriptView.Notice) -> None:
+        self.message = event.text
+        self._update_status()
 
     def _update_status(self, *_) -> None:
         view = self.view
@@ -242,8 +352,8 @@ class SessionScreen(Screen):
             text = f"{view.cursor + 1}/{len(view.blocks)} [{group}]"
             if self.message:
                 text += f"  {self.message}"
-            text += f"  ·  enter toggle  e/c {group}  E/C all  / find  q back"
-        self.query_one("#status", Static).update(text)
+            text += f"  ·  enter toggle  e/c {group}  E/C all  {{}} block  [[ ]] prompt  / find  q back"
+        self.query_one("#status", Static).update(Text(text))
 
     def action_search(self) -> None:
         find = self.query_one("#find", Input)
@@ -282,7 +392,7 @@ class SessionList(OptionList):
     BINDINGS = [
         Binding("j", "cursor_down", show=False),
         Binding("k", "cursor_up", show=False),
-        Binding("g", "first", show=False),
+        Binding("g,home", "first", show=False),
         Binding("G", "last", show=False),
     ]
 

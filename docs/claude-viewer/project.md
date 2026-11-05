@@ -45,10 +45,26 @@ record kind the parser handles.
 | Shown collapsed | Thinking blocks, attachments (one line with the file name), per-message token usage and model. |
 | Not shown | System reminders, `isMeta` text, subagent turns. |
 
-Keys, less/vim style: `j`/`k` move a block, `/` finds, `n`/`N` step through matches, `g`/`G`
-go to top and bottom, Enter or a click toggles a block, `e`/`c` expand or collapse every call
-of the selected block's tool, `E`/`C` every block, `q` goes back or quits. Arrow keys also
-work. The reports in [todo.md](todo.md) change several of these.
+Keys, less/vim style. Arrow keys work as `j`/`k`.
+
+| Key | Action |
+|---|---|
+| `j`/`k` | scroll one line |
+| `ctrl+d`/`ctrl+u` | scroll half a page; the cursor keeps its screen row |
+| PgDn/PgUp | scroll a page, the same way |
+| `}`/`{` | next or previous block |
+| `]]`/`[[` | next or previous prompt, scrolled to the top |
+| `gg`/`G` | top and bottom; Home and End too |
+| Enter, click | toggle the block |
+| `e`/`c` | expand or collapse every call to the cursor block's tool |
+| `E`/`C` | expand or collapse every block |
+| `/`, `n`/`N` | find, next and previous match |
+| `q` | back, or quit |
+
+The block cursor stays on screen: any scroll that would leave it off moves it to the first
+visible block going down or the last going up. Two-key motions go through a prefix handler
+in `TranscriptView.on_key`; a first key followed by anything else, or by nothing for 1 s,
+does nothing.
 
 Not built and not yet in the todo: HTML export, search across sessions, live follow, nested
 subagent transcripts.

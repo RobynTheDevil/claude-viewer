@@ -69,7 +69,7 @@ def test_view_toggles_and_groups(transcript):
         async with app.run_test(size=(100, 30)) as pilot:
             view = app.screen.query_one(TranscriptView)
             blocks = view.blocks
-            await pilot.press("j", "j", "j")
+            await pilot.press("right_curly_bracket", "right_curly_bracket", "right_curly_bracket")
             assert blocks[view.cursor].tool == "Bash"
             before = view.virtual_size.height
             await pilot.press("enter")
@@ -77,7 +77,7 @@ def test_view_toggles_and_groups(transcript):
             assert view.virtual_size.height > before
             await pilot.press("C")
             assert all(b.collapsed for b in blocks if b.collapsible)
-            await pilot.press("j", "j", "e")
+            await pilot.press("right_curly_bracket", "right_curly_bracket", "e")
             assert not blocks[5].collapsed and blocks[3].collapsed
             await pilot.press("slash", *"widget", "enter")
             assert "widget" in (blocks[view.cursor].text + str(blocks[view.cursor].input)).lower()
@@ -93,3 +93,63 @@ def test_ansi_output_is_styled_not_raw(transcript):
     print_session(session, Console(file=out, width=100, color_system=None))
     assert "c88c155 first commit" in out.getvalue() and "[33m" not in out.getvalue()
     assert "\x1b" not in to_markdown(session)
+
+
+def run_view(path, script, size=(80, 12)):
+    async def run():
+        app = ViewerApp(session=parse(path))
+        async with app.run_test(size=size) as pilot:
+            view = app.screen.query_one(TranscriptView)
+            await script(app, view, pilot)
+    asyncio.run(run())
+
+
+def test_line_scroll_keeps_cursor_on_screen(long_transcript):
+    async def script(app, view, pilot):
+        await pilot.press("E")
+        tall = next(i for i, b in enumerate(view.blocks) if b.kind == "tool")
+        view.action_jump(tall)
+        start = view.scroll_offset.y
+        await pilot.press("j", "j")
+        assert view.scroll_offset.y == start + 2 and view.cursor == tall
+        for _ in range(12):
+            await pilot.press("j")
+        assert view.cursor != tall
+        top = view._offsets[view.cursor]
+        assert top + len(view._strips(view.cursor)) > view.scroll_offset.y
+        await pilot.press("right_curly_bracket")
+        assert view.cursor > tall
+    run_view(long_transcript, script)
+
+
+def test_half_page_round_trip(long_transcript):
+    async def script(app, view, pilot):
+        await pilot.press("ctrl+d")
+        await pilot.press("ctrl+d")
+        y, cursor = view.scroll_offset.y, view.cursor
+        for _ in range(5):
+            await pilot.press("ctrl+d")
+        for _ in range(5):
+            await pilot.press("ctrl+u")
+        assert (view.scroll_offset.y, view.cursor) == (y, cursor)
+        assert view.scroll_offset.y > 0
+    run_view(long_transcript, script)
+
+
+def test_prompt_jumps(long_transcript):
+    async def script(app, view, pilot):
+        prompts = [i for i, b in enumerate(view.blocks) if b.kind == "prompt"]
+        assert len(prompts) == 5 and view.cursor == 0
+        for _ in range(4):
+            await pilot.press("right_square_bracket", "right_square_bracket")
+        assert view.cursor == prompts[4]
+        await pilot.press("right_square_bracket", "right_square_bracket")
+        assert view.cursor == prompts[4] and "last prompt" in str(app.screen.query_one("#status").render())
+        await pilot.press("left_square_bracket", "left_square_bracket")
+        assert view.cursor == prompts[3]
+        assert view.scroll_offset.y == view._offsets[prompts[3]]
+        await pilot.press("right_square_bracket", "x")
+        assert view.cursor == prompts[3]
+        await pilot.press("g", "g")
+        assert view.cursor == 0
+    run_view(long_transcript, script, size=(80, 30))
