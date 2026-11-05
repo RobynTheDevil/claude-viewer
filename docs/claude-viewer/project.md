@@ -31,10 +31,24 @@ collapsed, and file-edit diffs open.
 Calls are similar when they use the same tool: every Bash call, every Read, every Edit.
 Expand all and collapse all act on one tool's calls.
 
+### Hidden content
+
+Shown collapsed: thinking blocks, attachments (one placeholder line with the file name) and
+per-turn token usage with the model name. System reminders are not shown.
+
+### Keys
+
+less/vim style: `j`/`k` move, `/` finds, `n`/`N` step through matches, `g`/`G` go to top and
+bottom, Enter toggles a block, `q` quits. Arrow keys also work.
+
+### Command
+
+`claude-viewer`.
+
 ### First version
 
-The view above, plus export of a session to Markdown or HTML. Search across sessions, live
-follow and nested subagent transcripts come later.
+The view above, plus export of a session to Markdown, with diffs in `diff` fences. HTML
+export, search across sessions, live follow and nested subagent transcripts come later.
 
 ## Stack
 
