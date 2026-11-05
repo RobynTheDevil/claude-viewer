@@ -48,4 +48,4 @@ Medium
 
 ## Related Files
 - `src/claude-viewer/tests/test_viewer.py`
-- [open-enh-LineScrollBlockMotions.md](done-enh-LineScrollBlockMotions.md)
+- [done-enh-LineScrollBlockMotions.md](done-enh-LineScrollBlockMotions.md)

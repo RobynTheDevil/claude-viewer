@@ -53,4 +53,4 @@ read-only. Robyn chose this over sorting Bash by its first word.
 Medium
 
 ## Related Files
-- [open-enh-HideTokenUsage.md](done-enh-HideTokenUsage.md)
+- [done-enh-HideTokenUsage.md](done-enh-HideTokenUsage.md)

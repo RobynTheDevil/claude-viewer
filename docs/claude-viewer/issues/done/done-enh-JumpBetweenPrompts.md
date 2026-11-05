@@ -42,4 +42,4 @@ other bracket motions later.
 High
 
 ## Related Files
-- [open-enh-OutlinePanel.md](done-enh-OutlinePanel.md), which uses the same prompt index
+- [done-enh-OutlinePanel.md](done-enh-OutlinePanel.md), which uses the same prompt index

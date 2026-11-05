@@ -49,5 +49,5 @@ default, which makes held keys lag behind. Option 1 is preferred.
 High
 
 ## Related Files
-- [open-enh-HalfPageScroll.md](done-enh-HalfPageScroll.md)
-- [open-enh-VisualModeYank.md](done-enh-VisualModeYank.md), which also binds `j` and `k`
+- [done-enh-HalfPageScroll.md](done-enh-HalfPageScroll.md)
+- [done-enh-VisualModeYank.md](done-enh-VisualModeYank.md), which also binds `j` and `k`

@@ -75,6 +75,6 @@ added later alongside option 1.
 Medium
 
 ## Related Files
-- [open-enh-LineScrollBlockMotions.md](done-enh-LineScrollBlockMotions.md), which sets the
+- [done-enh-LineScrollBlockMotions.md](done-enh-LineScrollBlockMotions.md), which sets the
   normal-mode meanings of `j` and `k`
-- [open-enh-HalfPageScroll.md](done-enh-HalfPageScroll.md)
+- [done-enh-HalfPageScroll.md](done-enh-HalfPageScroll.md)

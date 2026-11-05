@@ -44,4 +44,4 @@ new query clears and re-renders every block.
 Medium
 
 ## Related Files
-- [open-enh-RegexSearch.md](done-enh-RegexSearch.md)
+- [done-enh-RegexSearch.md](done-enh-RegexSearch.md)

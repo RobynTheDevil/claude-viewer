@@ -96,12 +96,11 @@ drawn per line in `render_line`.
 `y` copies the selection as drawn, a wrapped line as its own line, without the gutter or
 the `⏺ ` and `  ⎿  ` markers and with trailing spaces removed. Rendered Markdown copies
 with its bullets and indentation. The text goes to `App.copy_to_clipboard` (OSC 52) and,
-under WSL, to `clip.exe` as UTF-16 LE with CRLF line ends and no BOM; a BOM is kept as a
-character in the pasted text.
+under WSL, to `clip.exe` as UTF-16 LE with CRLF line ends and no BOM, since `clip.exe`
+pastes a BOM as a character.
 
-Two-key motions go through a prefix handler
-in `TranscriptView.on_key`; a first key followed by anything else, or by nothing for 1 s,
-does nothing.
+Two-key motions go through a prefix handler in `TranscriptView.on_key`; a first key followed
+by anything else, or by nothing for 1 s, does nothing.
 
 **Hidden blocks take no lines.** The filter and the usage toggle set `TranscriptView.shown`;
 a hidden block's strips are empty, so `bisect_right` over the offsets lands on the visible
