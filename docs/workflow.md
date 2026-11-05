@@ -59,7 +59,9 @@ Three levels, and the level decides the base.
   that rebase.
 - **Land at every green milestone**: a coherent group of issues closed, the project builds,
   the confirmation step passes. A topic branch lands into its project branch; a project
-  branch lands into `main`.
+  branch lands into `main`, and `wf land` versions it: it bumps the project's semver, adds
+  a summary of the behaviour changes to its `changelog.md` from the closed log, and tags it.
+  This tracks versions on `main`; publishing, if any, happens from a separate release branch.
 - **Rebase onto `main` when work resumes on a branch**, not because `main` moved. Leave older
   branches alone until then. `main` carries the shared docs and tools, and they reach a
   project only by rebase. A project branch sitting behind `main` with nothing of its own on
