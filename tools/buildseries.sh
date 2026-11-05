@@ -85,10 +85,14 @@ trap restore EXIT
 
 FAILED=0
 for c in $COMMITS; do
+    subject=$(git log -1 --format='%h %s' "$c")
+    if ! git cat-file -e "$c:$DIR" 2>/dev/null; then
+        echo "skip $subject (no $DIR yet)"
+        continue
+    fi
     clear_tracked
     git checkout -q "$c" -- "$DIR"
 
-    subject=$(git log -1 --format='%h %s' "$c")
     if timeout "$BUILD_TIMEOUT" "$BUILD" "$PROJECT" "${BUILD_ARGS[@]}" >/dev/null 2>&1; then
         echo "ok   $subject"
     else

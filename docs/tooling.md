@@ -53,7 +53,8 @@ tools/buildseries.sh <project> main --test       # --test passed on to build.sh
 Checks that every commit in a range compiles on its own, which is what makes `git bisect`
 worth anything and what `workflow.md` requires before a branch lands. It checks out the
 project directory at each commit, builds it with `tools/build.sh`, prints `ok` or `FAIL`
-against the commit's subject, and exits non-zero if any failed. It stops at the first failure
+against the commit's subject, and exits non-zero if any failed. A commit from before the
+project directory existed prints `skip` and is not built. It stops at the first failure
 unless `--keep-going` is passed. Any other `--` flag is passed on to `tools/build.sh` at each
 commit, for whatever flags this repo's build defines; the rebuild of HEAD on the way out
 takes only `--force`.
