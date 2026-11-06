@@ -91,6 +91,7 @@ Keys, vim style with less's paging keys too. Arrow keys work as `h`/`j`/`k`/`l`.
 | `t` | show or hide times: a prompt's local time, a call's duration, and the gap before either when over 5 s |
 | `-` | the outline: a menu of every prompt; `j`/`k` and Enter jump, Esc, `q` or `-` close |
 | `/`, `n`/`N` | find by regular expression, next and previous match |
+| `?` | help: the filter, usage and times state and every key; Esc, `q` or `?` close |
 | Esc | leave visual mode, else clear the match highlights, else back to the list |
 | `q` | leave visual mode, else back to the list |
 | `ctrl+c` | quit; nothing else quits, `ctrl+q` included |
@@ -107,6 +108,11 @@ the `⏺ ` and `  ⎿  ` markers and with trailing spaces removed. Rendered Mark
 with its bullets and indentation. The text goes to `App.copy_to_clipboard` (OSC 52) and,
 under WSL, to `clip.exe` as UTF-16 LE with CRLF line ends and no BOM, since `clip.exe`
 pastes a BOM as a character.
+
+The status line is the position, then the visual mode, filter and last notice when there
+are any, then the common keys: `3/214 · enter toggle  o/x open/close  O/X all[Bash]  -
+outline  / find  ctrl+c quit  ? help`, the brackets naming the cursor block's group. The rest
+are in the help, a `ModalScreen` whose key list is `HELP_KEYS` in `app.py`.
 
 Two-key motions go through a prefix handler in `TranscriptView.on_key`; a first key followed
 by anything else, or by nothing for 1 s, does nothing.

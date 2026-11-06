@@ -4,8 +4,9 @@ import json
 import re
 
 from rich.console import Console
+from textual.widgets import Static
 
-from claude_viewer.app import TranscriptView, ViewerApp
+from claude_viewer.app import HelpScreen, TranscriptView, ViewerApp
 from claude_viewer.cli import main
 from claude_viewer.export import to_markdown
 from claude_viewer.render import print_session
@@ -568,3 +569,20 @@ def test_shell_highlight():
     assert style_of("cd") == [COMMAND] and style_of("git") == [COMMAND] and style_of("grep") == [COMMAND]
     assert style_of("log") == [] and style_of("done") == [] and style_of("out.md#a") == []
     assert style_of("-5") == [FLAG] and style_of("'a b'") == [STRING]
+
+
+def test_status_line_and_help(transcript):
+    async def script(app, view, pilot):
+        await pilot.press("right_curly_bracket", "right_curly_bracket", "right_curly_bracket")
+        status = str(app.screen.query_one("#status").render())
+        assert status.startswith(f"{view.position}/{view.visible_count} · enter toggle")
+        assert status.endswith("O/X all[Bash]  - outline  / find  ctrl+c quit  ? help")
+        await pilot.press("question_mark")
+        assert isinstance(app.screen, HelpScreen)
+        text = str(app.screen.query_one(Static).render())
+        assert "filter all" in text and "usage hidden" in text and "cycle the filter" in text
+        await pilot.press("question_mark")
+        assert not isinstance(app.screen, HelpScreen)
+        await pilot.press("question_mark", "escape")
+        assert not isinstance(app.screen, HelpScreen) and app.is_running
+    run_view(transcript, script, size=(120, 40))

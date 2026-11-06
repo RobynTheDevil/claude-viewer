@@ -14,7 +14,8 @@ from textual.binding import Binding
 from textual.geometry import Size
 from textual.message import Message
 from textual.reactive import reactive
-from textual.screen import Screen
+from textual.containers import VerticalScroll
+from textual.screen import ModalScreen, Screen
 from textual.scroll_view import ScrollView
 from textual.strip import Strip
 from textual.widgets import Input, OptionList, Static
@@ -645,6 +646,7 @@ class SessionScreen(Screen):
         Binding("N", "next_match(-1)", "Previous match", show=False),
         Binding("q", "close", "Back"),
         Binding("escape", "escape", "Back", show=False),
+        Binding("question_mark", "help", "Help", show=False),
     ]
 
     def __init__(self, session: Session, standalone: bool, show_usage: bool = False) -> None:
@@ -687,15 +689,14 @@ class SessionScreen(Screen):
             text = "empty session"
         else:
             group = view.blocks[view.cursor].group
-            text = f"{view.position}/{view.visible_count} [{group}]"
+            text = f"{view.position}/{view.visible_count}"
             if view.mode != "normal":
                 text = ("-- VISUAL LINE --  " if view.mode == "line" else "-- VISUAL --  ") + text
             if view.filter != "all":
                 text += f" {view.filter}"
             if self.message:
                 text += f"  {self.message}"
-            text += f"  ·  enter toggle  o/x block  O/X {group}  f filter  U usage  - outline  / find"
-            text += "  q back" if not self.standalone else "  ctrl+c quit"
+            text += f" · enter toggle  o/x open/close  O/X all[{group}]  - outline  / find  ctrl+c quit  ? help"
         self.query_one("#status", Static).update(Text(text))
 
     def action_search(self) -> None:
@@ -766,6 +767,10 @@ class SessionScreen(Screen):
             self._close_outline()
             self.view.go_prompt(event.option_index)
 
+    def action_help(self) -> None:
+        view = self.view
+        self.app.push_screen(HelpScreen(view.filter, view.show_usage, view.show_times))
+
     def action_escape(self) -> None:
         if self.outline.display:
             self._close_outline()
@@ -784,6 +789,79 @@ class SessionScreen(Screen):
             self.view.focus()
         elif not self.standalone:
             self.app.pop_screen()
+
+
+HELP_KEYS = (
+    ("j/k", "move the caret a line; the view scrolls at its edge"),
+    ("h/l  w/b  0 ^ $", "move along the line, by word, to its start, first non-blank or end"),
+    ("e ctrl+e / ctrl+y", "scroll one line down / up"),
+    ("d ctrl+d / u ctrl+u", "scroll half a page down / up"),
+    ("space ctrl+f / ctrl+b", "scroll a page down / up"),
+    ("v / V", "character or line selection; y copies, esc or q cancels"),
+    ("} / {", "next or previous block"),
+    ("]] / [[", "next or previous prompt"),
+    ("gg / G", "top and bottom; home/end and < / > too"),
+    ("gf", "open a Read, Edit or Write's file in the editor"),
+    ("enter, click", "toggle the block"),
+    ("o / x", "open or close the block"),
+    ("O / X", "open or close every block of the cursor block's kind or tool"),
+    ("E / C", "open or close every block"),
+    ("f", "cycle the filter: all, read-only, changes"),
+    ("U", "show or hide token usage lines"),
+    ("t", "show or hide prompt times, call durations and gaps over 5 s"),
+    ("-", "outline of every prompt; j/k and enter jump"),
+    ("/  n / N", "find by regular expression, next and previous match"),
+    ("esc", "leave visual mode, clear matches, else back to the list"),
+    ("q", "leave visual mode, else back to the list"),
+    ("?", "this help"),
+    ("ctrl+c", "quit"),
+)
+
+
+class HelpScreen(ModalScreen):
+    DEFAULT_CSS = """
+    HelpScreen {
+        align: center middle;
+    }
+    HelpScreen VerticalScroll {
+        width: auto;
+        max-width: 100%;
+        height: auto;
+        max-height: 100%;
+        background: $panel;
+        padding: 0 1;
+    }
+    """
+
+    BINDINGS = [
+        Binding("escape,q,question_mark", "dismiss", "Close", show=False),
+        Binding("j,down", "scroll(1)", show=False),
+        Binding("k,up", "scroll(-1)", show=False),
+    ]
+
+    def __init__(self, filter: str, usage: bool, times: bool) -> None:
+        super().__init__()
+        self.state = (filter, usage, times)
+
+    def compose(self) -> ComposeResult:
+        filter, usage, times = self.state
+        text = Text()
+        text.append("filter ", "bold")
+        text.append(filter)
+        text.append("   usage ", "bold")
+        text.append("shown" if usage else "hidden")
+        text.append("   times ", "bold")
+        text.append("shown" if times else "hidden")
+        width = max(len(key) for key, _ in HELP_KEYS)
+        for key, action in HELP_KEYS:
+            text.append("\n")
+            text.append(key.ljust(width + 2), "cyan")
+            text.append(action)
+        with VerticalScroll():
+            yield Static(text)
+
+    def action_scroll(self, step: int) -> None:
+        self.query_one(VerticalScroll).scroll_relative(y=step, animate=False)
 
 
 class SessionList(OptionList):
