@@ -481,6 +481,40 @@ def test_open_and_close_blocks(transcript):
     run_view(transcript, script, size=(100, 30))
 
 
+def test_command_writes():
+    from claude_viewer.access import command_writes
+    reads = [
+        "ls -la",
+        "git status --short && git log --oneline -5",
+        "grep -rn foo src | head -20",
+        "cat a.txt 2>/dev/null; echo done",
+        "cd /x && sed -n 1,20p f.py",
+        "find . -name '*.py' | xargs grep -n def",
+        "git -C repo diff HEAD~1",
+        "for f in *.md; do\n  head -3 \"$f\"\ndone",
+        "cat <<EOF\nrm -rf /\nEOF",
+        "git branch -vv",
+        "FOO=1 env BAR=2 wc -l x",
+        "git config user.name",
+        "command -v cargo",
+    ]
+    writes = [
+        "rm -rf build",
+        "echo x > out.txt",
+        "git commit -m 'x'",
+        "sed -i 's/a/b/' f",
+        "find . -name '*.pyc' -delete",
+        "python3 script.py",
+        "ls | tee list.txt",
+        "cat > f <<'EOF'\nhello\nEOF",
+        "git branch new-topic",
+        "git config user.name Robyn",
+        "echo 'unterminated",
+    ]
+    assert [c for c in reads if command_writes(c)] == []
+    assert [c for c in writes if not command_writes(c)] == []
+
+
 def test_command_header_full_when_expanded():
     from claude_viewer.render import render_block
     from claude_viewer.transcript import Block

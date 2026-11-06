@@ -23,6 +23,9 @@ None open.
 - Commands show in full: no `…` unless the command spans more than 3 lines, and none once
   expanded.
     - Test: a long one-line Bash shows whole and wraps; `o` on a heredoc call shows every line.
+- Read and write indicators: the tool name is cyan for a read, yellow for a write; `f`'s
+  changes filter uses the same rule.
+    - Test: `git status` is cyan, `git commit` and `rm` yellow; changes shows the yellow calls.
 
 ## back-burner:
 

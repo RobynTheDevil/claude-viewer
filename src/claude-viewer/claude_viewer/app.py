@@ -20,6 +20,7 @@ from textual.strip import Strip
 from textual.widgets import Input, OptionList, Static
 from textual.widgets.option_list import Option
 
+from claude_viewer.access import is_write
 from claude_viewer.editor import editor_command, file_target, local_path
 from claude_viewer.render import header_plain, render_block
 from claude_viewer.selection import (
@@ -156,7 +157,7 @@ class TranscriptView(ScrollView, can_focus=True):
             return True
         if block.kind != "tool":
             return False
-        return bool(block.patch) == (self.filter == "changes")
+        return is_write(block) == (self.filter == "changes")
 
     def _compute_visible(self) -> None:
         shown = [b.kind != "usage" and self._passes_filter(b) for b in self.blocks]

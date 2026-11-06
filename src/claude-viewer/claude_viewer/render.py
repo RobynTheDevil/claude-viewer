@@ -15,6 +15,7 @@ from rich.syntax import Syntax
 from rich.table import Table
 from rich.text import Text
 
+from claude_viewer.access import is_write
 from claude_viewer.transcript import Block, Session
 
 LABELS = {"Edit": "Update", "MultiEdit": "Update", "Grep": "Search", "Glob": "Search", "Task": "Agent"}
@@ -204,7 +205,7 @@ def header_plain(block: Block) -> str:
 
 def tool_header(block: Block, suffix: str = "") -> Table:
     style = "red" if block.is_error else ("green" if block.result is not None else "dim")
-    text = Text(tool_label(block), style="bold")
+    text = Text(tool_label(block), style="bold yellow" if is_write(block) else "bold cyan")
     lines = command_lines(block)
     if lines is None:
         arg = tool_arg(block)

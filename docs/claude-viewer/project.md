@@ -42,6 +42,8 @@ All under `src/claude-viewer/claude_viewer/`.
   `TranscriptView`, the status line and the find box.
 - `export.py`: Markdown export. Tool output and thinking go in `<details>`, diffs in `diff`
   fences.
+- `access.py`: whether a call reads or writes. Bash commands are parsed into simple commands,
+  each judged by its name, its subcommand or flags, and any redirect to a file.
 - `editor.py`: the file and line a call touched, and the editor command that opens it.
 - `selection.py`: caret word motions, marker widths, the selection overlay and the
   Windows clipboard.
@@ -58,6 +60,7 @@ record kind the parser handles.
 | Opening | No argument: a picker of the current directory's project sessions, like `/resume`; `--all` lists every project. A session ID, ID prefix or `.jsonl` path opens that session. |
 | Default view | Prompts and replies in full, each tool call on one line with its output collapsed, file-edit diffs open. |
 | Commands | Never cut at a width. Collapsed shows up to 3 lines then `… +N lines`; expanded shows all of it. |
+| Read or write | The tool name is cyan for a read and yellow for a write. |
 | Similar calls | Calls to the same tool: every Bash, every Read, every Edit. `O`/`X` act on them together. |
 | Shown collapsed | Thinking blocks, attachments (one line with the file name), per-message token usage and model. |
 | Not shown | System reminders, `isMeta` text, subagent turns. |
@@ -109,8 +112,9 @@ by anything else, or by nothing for 1 s, does nothing.
 a hidden block's strips are empty, so `bisect_right` over the offsets lands on the visible
 block after a run of hidden ones. Motions, search and `O`/`X`/`E`/`C` skip hidden blocks, and
 the blank line after a block depends on the next shown one, so a change of visibility clears
-the whole cache. A call is a change when its result has a `structuredPatch`; every other call
-is read-only, Bash included, whatever it ran. Prompts and replies show under every filter,
+the whole cache. A call is a change when `access.is_write` says so: it has a `structuredPatch`, is an
+Edit, Write or NotebookEdit, or is a shell command that writes. A command counts as a write
+unless every simple command in it is a known reader, so an unknown program is a write. Prompts and replies show under every filter,
 thinking and notes only under all, and a usage line only while a block of its message shows.
 `--no-usage` starts with usage hidden and leaves it out of `--print` and `--export`. No
 settings file exists; an alias carries the flag.
