@@ -45,9 +45,9 @@ def test_print_shows_default_view(transcript):
     print_session(parse(transcript), Console(file=out, width=100, color_system=None))
     text = out.getvalue()
     assert "> Please fix the widget" in text
-    assert re.search(r"⏺ Bash *\n  ls -la", text)
+    assert re.search(r"• Bash *\n  ls -la", text)
     assert "… +2 lines" in text
-    assert "⏺ Update(/w/widget.py)" in text
+    assert "• Update(/w/widget.py)" in text
     assert "+x = 2" in text
     assert "secret" not in text and "Skill body" not in text and "sidechain" not in text
 
@@ -132,7 +132,7 @@ def test_caret_lines_and_scroll_keep_cursor_on_screen(long_transcript):
 
 def test_caret_columns_and_words():
     from claude_viewer.selection import first_nonblank, marker_len, next_word, prev_word
-    text = "⏺ Bash(git status)"
+    text = "• Bash(git status)"
     assert next_word(text, 0) == 2 and next_word(text, 2) == 6 and next_word(text, 6) == 7
     assert prev_word(text, 7) == 6 and prev_word(text, 6) == 2
     assert first_nonblank("     line 3") == 5
@@ -533,7 +533,7 @@ def test_command_header_full_when_expanded():
     assert "x" * 150 in collapsed and "echo 1" in collapsed and "echo 2" not in collapsed
     assert "… +4 lines" in collapsed
     expanded = shown(False)
-    assert expanded.splitlines()[0].strip() == "⏺ Bash"
+    assert expanded.splitlines()[0].strip() == "• Bash"
     assert "echo 5" in expanded and "… +" not in expanded
     short = Block("tool", tool="Bash", input={"command": "ls\npwd"}, result="ok")
     with console.capture() as cap:
@@ -548,3 +548,16 @@ def test_command_languages():
     assert [t.plain for t in out] == lines
     assert any(span.style for span in out[1].spans)
     assert any(span.style for span in out[5].spans)
+
+
+def test_shell_highlight():
+    from claude_viewer.shell import COMMAND, FLAG, STRING, highlight_shell
+    [text] = highlight_shell(["cd /x && git log -5 'a b' | grep done 2>&1 > out.md#a"])
+
+    def style_of(word):
+        start = text.plain.index(word)
+        return [s.style for s in text.spans if s.start <= start < s.end]
+
+    assert style_of("cd") == [COMMAND] and style_of("git") == [COMMAND] and style_of("grep") == [COMMAND]
+    assert style_of("log") == [] and style_of("done") == [] and style_of("out.md#a") == []
+    assert style_of("-5") == [FLAG] and style_of("'a b'") == [STRING]

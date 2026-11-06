@@ -23,7 +23,7 @@ None open.
 - Commands show in full: no `…` unless the command spans more than 3 lines, and none once
   expanded.
     - Test: a long one-line Bash shows whole and wraps; `o` on a heredoc call shows every line.
-- Commands are drawn under `⏺ Bash`, syntax-colored, with a heredoc body colored in its own
+- Commands are drawn under `• Bash`, syntax-colored, with a heredoc body colored in its own
   language.
     - Test: `python3 - <<'EOF'` shows Python colors in the body; `cat > x.rs <<EOF` shows Rust.
 - Read and write indicators: the tool name is cyan for a read, yellow for a write; `f`'s

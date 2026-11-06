@@ -35,7 +35,7 @@ GIT_READ = {
 GIT_LIST_FLAGS = {"-a", "-v", "-vv", "-r", "--list", "-l", "--all", "--show-current", "--contains", "--merged"}
 GH_READ = {"view", "list", "status", "diff", "checks"}
 
-HEREDOC = re.compile(r"<<-?\s*(['\"]?)(\w+)\1")
+HEREDOC = re.compile(r"(?<!<)<<(?!<)-?\s*(['\"]?)(\w+)\1")
 
 
 def is_write(block: Block) -> bool:

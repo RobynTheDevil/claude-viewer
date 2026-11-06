@@ -18,6 +18,7 @@ from rich.table import Table
 from rich.text import Text
 
 from claude_viewer.access import HEREDOC, is_write
+from claude_viewer.shell import STRING, highlight_shell
 from claude_viewer.transcript import Block, Session
 
 LABELS = {"Edit": "Update", "MultiEdit": "Update", "Grep": "Search", "Glob": "Search", "Task": "Agent"}
@@ -25,6 +26,7 @@ ARG_KEYS = ("command", "file_path", "notebook_path", "pattern", "url", "query", 
 PREVIEW_LINES = 3
 
 DOT = "⏺ "
+TOOL_DOT = "• "
 ELBOW = "  ⎿  "
 PROMPT_STYLE = "on grey15"
 ADD_STYLE = "on #16351f"
@@ -135,25 +137,30 @@ def heredoc_lexer(opener: str) -> Lexer | None:
 
 
 def highlight_command(lines: list[str], tool: str) -> list[Text]:
-    shell = lexer_named(SHELL_LEXERS.get(tool, "bash"))
-    runs: list[tuple[Lexer | None, list[str]]] = []
+    if tool in SHELL_LEXERS and tool != "Bash":
+        return highlight_lines(lines, lexer_named(SHELL_LEXERS[tool]))
+    out: list[Text] = []
+    shell: list[str] = []
+    body: list[str] = []
+    lexer = None
     ending = None
     for line in lines:
-        if ending is not None and line.strip() == ending:
-            ending = None
         if ending is None:
-            lexer = shell
-        if not runs or runs[-1][0] is not lexer:
-            runs.append((lexer, []))
-        runs[-1][1].append(line)
-        if ending is None:
+            shell.append(line)
             match = HEREDOC.search(line)
             if match:
                 ending = match.group(2)
                 lexer = heredoc_lexer(line)
-    out = []
-    for lexer, run in runs:
-        out.extend(highlight_lines(run, lexer))
+                out.extend(highlight_shell(shell))
+                shell = []
+        elif line.strip() == ending:
+            out.extend(highlight_lines(body, lexer))
+            out.append(Text(line, STRING))
+            body = []
+            ending = None
+        else:
+            body.append(line)
+    out.extend(highlight_lines(body, lexer) if ending is not None else highlight_shell(shell))
     return out
 
 
@@ -269,7 +276,7 @@ def tool_header(block: Block, suffix: str = "") -> Table:
         if arg:
             text.append(f"({arg})")
         text.append(suffix, style="dim")
-        return marked(DOT, style, text)
+        return marked(TOOL_DOT, style, text)
     text.append(suffix, style="dim")
     shown = lines if not block.collapsed else lines[:PREVIEW_LINES]
     for line in highlight_command(lines, block.tool)[: len(shown)]:
@@ -277,7 +284,7 @@ def tool_header(block: Block, suffix: str = "") -> Table:
         text.append_text(line)
     if len(lines) > len(shown):
         text.append(f"\n… +{len(lines) - len(shown)} lines", style="dim")
-    return marked(DOT, style, text)
+    return marked(TOOL_DOT, style, text)
 
 
 def output(text: str, style: str = "") -> Text:

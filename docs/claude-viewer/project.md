@@ -44,6 +44,7 @@ All under `src/claude-viewer/claude_viewer/`.
   fences.
 - `access.py`: whether a call reads or writes. Bash commands are parsed into simple commands,
   each judged by its name, its subcommand or flags, and any redirect to a file.
+- `shell.py`: the Bash command highlighter.
 - `editor.py`: the file and line a call touched, and the editor command that opens it.
 - `selection.py`: caret word motions, marker widths, the selection overlay and the
   Windows clipboard.
@@ -59,8 +60,8 @@ record kind the parser handles.
 | Command | `claude-viewer` |
 | Opening | No argument: a picker of the current directory's project sessions, like `/resume`; `--all` lists every project. A session ID, ID prefix or `.jsonl` path opens that session. |
 | Default view | Prompts and replies in full, each tool call on one line with its output collapsed, file-edit diffs open. |
-| Commands | On the lines under `⏺ Bash`, never cut at a width. Collapsed shows up to 3 lines then `… +N lines`; expanded shows all of it. |
-| Command colors | Shell syntax, and a heredoc body in its own language: the interpreter it feeds (`python3 - <<EOF`) or the suffix of the file it is written to (`cat > a.rs <<EOF`). |
+| Commands | On the lines under `• Bash`, never cut at a width. Collapsed shows up to 3 lines then `… +N lines`; expanded shows all of it. |
+| Command colors | `shell.py` colors each simple command's name, flags, strings, variables, operators and redirects; Pygments' Bash lexer colors only builtins and reads a mid-word `#` as a comment. A heredoc body in its own language: the interpreter it feeds (`python3 - <<EOF`) or the suffix of the file it is written to (`cat > a.rs <<EOF`). |
 | Read or write | The dot and tool name are cyan for a read and yellow for a write; the dot is red on an error and dim with no result. |
 | Similar calls | Calls to the same tool: every Bash, every Read, every Edit. `O`/`X` act on them together. |
 | Shown collapsed | Thinking blocks, attachments (one line with the file name), per-message token usage and model. |
