@@ -1,6 +1,7 @@
 import asyncio
 import io
 import json
+import re
 
 from rich.console import Console
 
@@ -44,7 +45,7 @@ def test_print_shows_default_view(transcript):
     print_session(parse(transcript), Console(file=out, width=100, color_system=None))
     text = out.getvalue()
     assert "> Please fix the widget" in text
-    assert "⏺ Bash(ls -la)" in text
+    assert re.search(r"⏺ Bash *\n  ls -la", text)
     assert "… +2 lines" in text
     assert "⏺ Update(/w/widget.py)" in text
     assert "+x = 2" in text
@@ -147,7 +148,7 @@ def test_visual_line_yank(long_transcript, monkeypatch):
     async def script(app, view, pilot):
         bash = next(i for i, b in enumerate(view.blocks) if b.kind == "tool")
         view.action_jump(bash)
-        await pilot.press("enter", "j", "V", "j", "j")
+        await pilot.press("enter", "j", "j", "V", "j", "j")
         assert view.mode == "line"
         assert "VISUAL LINE" in str(app.screen.query_one("#status").render())
         await pilot.press("y")
@@ -159,8 +160,8 @@ def test_visual_line_yank(long_transcript, monkeypatch):
         await pilot.press("v", "dollar_sign", "y")
         assert copied[-1] == "line 0"
         view.action_jump(bash)
-        await pilot.press("w", "v", "w", "y")
-        assert copied[-1] == "Bash("
+        await pilot.press("j", "w", "v", "w", "y")
+        assert copied[-1] == "echo 0"
     run_view(long_transcript, script, size=(80, 30))
 
 
@@ -532,8 +533,18 @@ def test_command_header_full_when_expanded():
     assert "x" * 150 in collapsed and "echo 1" in collapsed and "echo 2" not in collapsed
     assert "… +4 lines" in collapsed
     expanded = shown(False)
-    assert "echo 5)" in expanded and "… +" not in expanded
+    assert expanded.splitlines()[0].strip() == "⏺ Bash"
+    assert "echo 5" in expanded and "… +" not in expanded
     short = Block("tool", tool="Bash", input={"command": "ls\npwd"}, result="ok")
     with console.capture() as cap:
         console.print(render_block(short))
     assert "…" not in cap.get()
+
+
+def test_command_languages():
+    from claude_viewer.render import highlight_command
+    lines = ["python3 - <<'EOF'", "def f():", "    return 1", "EOF", "cat > a.rs <<EOF", "fn main() {}", "EOF", "ls"]
+    out = highlight_command(lines, "Bash")
+    assert [t.plain for t in out] == lines
+    assert any(span.style for span in out[1].spans)
+    assert any(span.style for span in out[5].spans)

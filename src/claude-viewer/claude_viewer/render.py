@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import os
+import re
 from datetime import datetime
 from functools import lru_cache
 from pathlib import PurePath
 
 from pygments.lexer import Lexer
-from pygments.lexers import get_lexer_for_filename
+from pygments.lexers import get_lexer_by_name, get_lexer_for_filename
 from pygments.lexers.special import TextLexer
 from pygments.util import ClassNotFound
 from rich.console import Console, Group, RenderableType
@@ -15,7 +17,7 @@ from rich.syntax import Syntax
 from rich.table import Table
 from rich.text import Text
 
-from claude_viewer.access import is_write
+from claude_viewer.access import HEREDOC, is_write
 from claude_viewer.transcript import Block, Session
 
 LABELS = {"Edit": "Update", "MultiEdit": "Update", "Grep": "Search", "Glob": "Search", "Task": "Agent"}
@@ -28,6 +30,15 @@ PROMPT_STYLE = "on grey15"
 ADD_STYLE = "on #16351f"
 DEL_STYLE = "on #3d1a1d"
 SYNTAX_THEME = "monokai"
+SHELL_LEXERS = {"Bash": "bash", "PowerShell": "powershell"}
+INTERPRETERS = {
+    "python": "python", "python3": "python", "py": "python", "node": "javascript",
+    "deno": "javascript", "bun": "javascript", "ruby": "ruby", "perl": "perl", "php": "php",
+    "bash": "bash", "sh": "bash", "zsh": "bash", "pwsh": "powershell",
+    "powershell": "powershell", "powershell.exe": "powershell", "psql": "sql",
+    "sqlite3": "sql", "mysql": "sql", "lua": "lua",
+}
+REDIRECT_TARGET = re.compile(r"(?:^|[^0-9&>])>>?\s*(['\"]?)([^\s'\";|&<>]+)\1")
 GAP_SHOWN = 5.0
 
 
@@ -104,6 +115,46 @@ def _lexer_for_name(name: str) -> Lexer | None:
     except ClassNotFound:
         return None
     return None if isinstance(lexer, TextLexer) else lexer
+
+
+@lru_cache(maxsize=None)
+def lexer_named(name: str) -> Lexer:
+    return get_lexer_by_name(name, stripnl=False, ensurenl=True)
+
+
+def heredoc_lexer(opener: str) -> Lexer | None:
+    before = opener[: HEREDOC.search(opener).start()]
+    target = REDIRECT_TARGET.search(before)
+    if target and target.group(2) != "/dev/null":
+        return lexer_for(target.group(2))
+    for word in re.split(r"[\s;|&()]+", before):
+        name = INTERPRETERS.get(os.path.basename(word))
+        if name:
+            return lexer_named(name)
+    return None
+
+
+def highlight_command(lines: list[str], tool: str) -> list[Text]:
+    shell = lexer_named(SHELL_LEXERS.get(tool, "bash"))
+    runs: list[tuple[Lexer | None, list[str]]] = []
+    ending = None
+    for line in lines:
+        if ending is not None and line.strip() == ending:
+            ending = None
+        if ending is None:
+            lexer = shell
+        if not runs or runs[-1][0] is not lexer:
+            runs.append((lexer, []))
+        runs[-1][1].append(line)
+        if ending is None:
+            match = HEREDOC.search(line)
+            if match:
+                ending = match.group(2)
+                lexer = heredoc_lexer(line)
+    out = []
+    for lexer, run in runs:
+        out.extend(highlight_lines(run, lexer))
+    return out
 
 
 def lexer_for(path: str) -> Lexer | None:
@@ -204,8 +255,14 @@ def header_plain(block: Block) -> str:
 
 
 def tool_header(block: Block, suffix: str = "") -> Table:
-    style = "red" if block.is_error else ("green" if block.result is not None else "dim")
-    text = Text(tool_label(block), style="bold yellow" if is_write(block) else "bold cyan")
+    if block.is_error:
+        style = "red"
+    elif block.result is None:
+        style = "dim"
+    else:
+        style = "yellow" if is_write(block) else "cyan"
+    text = Text()
+    text.append(tool_label(block), "bold " + ("yellow" if is_write(block) else "cyan"))
     lines = command_lines(block)
     if lines is None:
         arg = tool_arg(block)
@@ -213,11 +270,11 @@ def tool_header(block: Block, suffix: str = "") -> Table:
             text.append(f"({arg})")
         text.append(suffix, style="dim")
         return marked(DOT, style, text)
-    shown = lines if not block.collapsed else lines[:PREVIEW_LINES]
-    text.append("(" + shown[0] + (")" if len(shown) == 1 else ""))
     text.append(suffix, style="dim")
-    if len(shown) > 1:
-        text.append("\n" + "\n".join(shown[1:]) + ")")
+    shown = lines if not block.collapsed else lines[:PREVIEW_LINES]
+    for line in highlight_command(lines, block.tool)[: len(shown)]:
+        text.append("\n")
+        text.append_text(line)
     if len(lines) > len(shown):
         text.append(f"\n… +{len(lines) - len(shown)} lines", style="dim")
     return marked(DOT, style, text)
