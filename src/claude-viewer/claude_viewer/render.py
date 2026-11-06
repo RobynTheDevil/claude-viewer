@@ -104,6 +104,28 @@ def usage_summary(block: Block) -> str:
     return " · ".join(parts)
 
 
+def wrap_cuts(plain: str, width: int) -> list[int]:
+    cuts = []
+    used = cell_len(plain) - cell_len(plain.lstrip(" "))
+    for token in re.finditer(r"(\S+)(\s*)", plain):
+        word = cell_len(token.group(1))
+        if used + word > width:
+            if word <= width:
+                cuts.append(token.start())
+                used = 0
+            else:
+                for i in range(token.start(), token.end(1)):
+                    w = cell_len(plain[i])
+                    if used + w > width:
+                        cuts.append(i)
+                        used = 0
+                    used += w
+                used += cell_len(token.group(2))
+                continue
+        used += word + cell_len(token.group(2))
+    return cuts
+
+
 class Folded:
     def __init__(self, text: Text) -> None:
         self.text = text
@@ -111,14 +133,7 @@ class Folded:
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
         width = max(1, options.max_width)
         for line in self.text.split("\n", allow_blank=True):
-            cuts = []
-            used = 0
-            for i, ch in enumerate(line.plain):
-                w = cell_len(ch)
-                if used + w > width:
-                    cuts.append(i)
-                    used = 0
-                used += w
+            cuts = wrap_cuts(line.plain, width)
             for piece in line.divide(cuts) if cuts else [line]:
                 piece.no_wrap = True
                 piece.overflow = "crop"

@@ -625,6 +625,14 @@ def test_long_command_folds_by_character():
     assert "".join(line[2:] for line in lines[:-1]).rstrip() == command
 
 
+def test_wrap_cuts_prefer_word_boundaries():
+    from claude_viewer.render import wrap_cuts
+    assert wrap_cuts("aaa bbb ccc", 8) == [8]
+    assert wrap_cuts("ab " + "x" * 12, 8) == [8]
+    assert wrap_cuts("ab " + "x" * 6, 8) == [3]
+    assert wrap_cuts("  " + "x" * 10, 8) == [8]
+
+
 def test_shell_groups_split_by_access():
     from claude_viewer.transcript import Block
     read = Block("tool", tool="Bash", input={"command": "git status"})
