@@ -60,9 +60,9 @@ record kind the parser handles.
 |---|---|
 | Command | `claude-viewer` |
 | Opening | No argument: a picker of the current directory's project sessions, like `/resume`; `--all` lists every project. A session ID, ID prefix or `.jsonl` path opens that session. |
-| Default view | Prompts and replies in full, each tool call on one line with its output collapsed to `… +N lines`, file-edit diffs open. |
+| Default view | Prompts and replies in full, each tool call on one line with its output collapsed to ` > N lines`, file-edit diffs open. Replies, tool calls, thinking and usage start with a `• ` dot; a reply's and thinking's are white. |
 | Spacing | A blank line after an expanded block, none after a collapsed one. Nested lines indent one cell, like the prompt's `> `: the result elbow is ` ⎿ `. The cursor gutter is one column, `▌` beside the cursor block. |
-| Commands | A Bash call reads `$ <command>`, the `$` in the dot's color; other shells' commands sit on the lines under `• PowerShell`. Never cut at a width. Collapsed shows up to 3 lines then `… +N lines`; expanded shows all of it. |
+| Commands | A Bash call reads `$ <command>`, the `$` in the dot's color; other shells' commands sit on the lines under `• PowerShell`. Neither a command nor another tool's argument is cut at a width; both wrap. Collapsed shows up to 3 lines then `… +N lines`; expanded shows all of it. |
 | Command colors | `shell.py` colors each simple command's name, flags, strings, variables, operators and redirects; Pygments' Bash lexer colors only builtins and reads a mid-word `#` as a comment. A heredoc body in its own language: the interpreter it feeds (`python3 - <<EOF`) or the suffix of the file it is written to (`cat > a.rs <<EOF`). |
 | Read or write | The dot and tool name are cyan for a read and yellow for a write; the dot is red on an error and dim with no result. |
 | Similar calls | Calls to the same tool: every Bash, every Read, every Edit. `O`/`X` act on them together. |
@@ -107,7 +107,7 @@ the caret on the cursor block's first line. The caret and the selection are draw
 `render_line`.
 
 `y` copies the selection as drawn, a wrapped line as its own line, without the gutter or
-the `⏺ `, `• `, `$ ` and ` ⎿ ` markers and with trailing spaces removed. Rendered Markdown copies
+the `• `, `$ ` and ` ⎿ ` markers and with trailing spaces removed. Rendered Markdown copies
 with its bullets and indentation. The text goes to `App.copy_to_clipboard` (OSC 52) and,
 under WSL, to `clip.exe` as UTF-16 LE with CRLF line ends and no BOM, since `clip.exe`
 pastes a BOM as a character.

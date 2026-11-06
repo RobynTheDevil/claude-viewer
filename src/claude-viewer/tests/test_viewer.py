@@ -47,7 +47,7 @@ def test_print_shows_default_view(transcript):
     assert "> Please fix the widget" in text
     assert re.search(r"^\$ ls -la *$", text, re.M)
     assert "• Thinking…" in text
-    assert " ⎿ … +5 lines" in text
+    assert re.search(r"^ > 5 lines *$", text, re.M)
     assert "• Update(/w/widget.py)" in text
     assert "+x = 2" in text
     assert "secret" not in text and "Skill body" not in text and "sidechain" not in text
@@ -140,7 +140,7 @@ def test_caret_columns_and_words():
     assert first_nonblank("     line 3") == 5
     assert marker_len("tool", " ⎿ out") == 3 and marker_len("tool", "   more") == 3
     assert marker_len("tool", "     more") == 3
-    assert marker_len("text", "⏺ Fixed") == 2 and marker_len("prompt", "> hi") == 0
+    assert marker_len("text", "• Fixed") == 2 and marker_len("prompt", "> hi") == 0
 
 
 def test_visual_line_yank(long_transcript, monkeypatch):
@@ -526,6 +526,17 @@ def test_command_writes():
     assert [c for c in writes if not command_writes(c)] == []
 
 
+def test_long_tool_header_wraps():
+    from claude_viewer.render import render_block
+    from claude_viewer.transcript import Block
+    prompt = "investigate " + "word " * 60 + "end"
+    block = Block("tool", tool="Agent", input={"prompt": prompt}, result="ok")
+    console = Console(width=80, file=io.StringIO(), color_system=None)
+    with console.capture() as cap:
+        console.print(render_block(block))
+    assert "…" not in cap.get() and "end)" in cap.get()
+
+
 def test_command_header_full_when_expanded():
     from claude_viewer.render import render_block
     from claude_viewer.transcript import Block
@@ -548,7 +559,7 @@ def test_command_header_full_when_expanded():
     short = Block("tool", tool="Bash", input={"command": "ls\npwd"}, result="ok")
     with console.capture() as cap:
         console.print(render_block(short))
-    assert cap.get().count("…") == 1 and "… +1 line\n" in cap.get()
+    assert "…" not in cap.get() and re.search(r"^ > 1 line *$", cap.get(), re.M)
 
 
 def test_command_languages():

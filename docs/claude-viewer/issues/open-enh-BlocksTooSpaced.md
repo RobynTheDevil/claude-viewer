@@ -14,12 +14,14 @@ Fit more of a session on screen: smaller indents, and collapsed blocks packed to
 - Every nested indent is one space, like the prompt's `> `: the elbow is ` ⎿ ` and note
   bodies indent 1.
 - A collapsed block has no blank line after it; an expanded one keeps it.
-- A collapsed result shows only `… +N lines` (`… +1 line`, `(no output)` when empty). A
+- A collapsed result shows only ` > N lines` (` > 1 line`, ` > no output` when empty). A
   collapsed Read's `Read N lines` and an Edit's summary stay. A Bash command keeps its
   3-line preview.
 - The cursor gutter is one column: `▌` on the cursor block, a space elsewhere.
 - A Bash call reads `$ <command>`, the `$` in the dot's color, continuation lines under the
-  command. Thinking and usage lines start with the dot: `• Thinking…`, `• <model> · …`.
+  command. Replies, thinking and usage start with the dot, white for a reply and thinking:
+  `• Thinking…`, `• <model> · …`. `⏺` read as `@` in Robyn's font.
+- A tool's argument wraps instead of being cut at 100 characters with `…`.
 - `y` still copies without the markers, `$ ` included.
 
 ## Design

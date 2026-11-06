@@ -25,7 +25,7 @@ None open.
 - [Status Line Crowded](issues/open-enh-StatusLineCrowded.md)
     - Test: the status line reads as asked; `?` expands the help at the bottom with filter, usage, times and scrollbar; Esc, `q` or `?` closes it; `ctrl+s` toggles the scrollbar, off at start.
 - [Blocks Too Spaced](issues/open-enh-BlocksTooSpaced.md)
-    - Test: one-column `▌` gutter; Bash reads `$ <command>` with a colored `$`; `• Thinking…` and `• <usage>`; ` ⎿ ` elbow; a run of collapsed calls has no blank lines; a collapsed result shows only `… +N lines`; `y` copies without markers.
+    - Test: one-column `▌` gutter; Bash reads `$ <command>` with a colored `$`; `• ` white for replies and thinking, dim for usage; long tool arguments wrap; ` ⎿ ` elbow; a run of collapsed calls has no blank lines; a collapsed result shows only ` > N lines`; `y` copies without markers.
 
 ## back-burner:
 

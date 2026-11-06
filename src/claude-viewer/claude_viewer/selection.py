@@ -9,7 +9,7 @@ from rich.style import Style
 from textual.strip import Strip
 
 CLIP_EXE = "/mnt/c/Windows/system32/clip.exe"
-MARKERS = {"text": ("⏺ ",), "tool": ("• ", "$ ", " ⎿ "), "thinking": ("• ",), "usage": ("• ",), "image": (" ⎿ ",)}
+MARKERS = {"text": ("• ",), "tool": ("• ", "$ ", " ⎿ "), "thinking": ("• ",), "usage": ("• ",), "image": (" ⎿ ",)}
 MARKER_WIDTH = {"text": 2, "tool": 3, "thinking": 2, "usage": 2, "note": 1, "image": 3}
 
 

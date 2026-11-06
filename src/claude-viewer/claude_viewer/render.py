@@ -25,7 +25,7 @@ LABELS = {"Edit": "Update", "MultiEdit": "Update", "Grep": "Search", "Glob": "Se
 ARG_KEYS = ("command", "file_path", "notebook_path", "pattern", "url", "query", "description", "skill", "prompt")
 PREVIEW_LINES = 3
 
-DOT = "⏺ "
+DOT = "• "
 TOOL_DOT = "• "
 SHELL_PROMPT = "$ "
 ELBOW = " ⎿ "
@@ -62,7 +62,7 @@ def tool_arg(block: Block, width: int = 100) -> str:
                 break
     lines = value.strip().splitlines()
     first = lines[0] if lines else ""
-    if len(first) > width:
+    if width and len(first) > width:
         first = first[: width - 1] + "…"
     elif len(lines) > 1:
         first += " …"
@@ -275,7 +275,7 @@ def tool_header(block: Block, suffix: str = "") -> Table:
     text = Text()
     text.append(tool_label(block), "bold " + ("yellow" if is_write(block) else "cyan"))
     if lines is None:
-        arg = tool_arg(block)
+        arg = tool_arg(block, width=0)
         if arg:
             text.append(f"({arg})")
         text.append(suffix, style="dim")
@@ -324,10 +324,8 @@ def tool_body(block: Block) -> RenderableType:
         return marked(ELBOW, "dim", output("\n".join(lines) or "(no output)", style))
     if block.tool == "Read" and not block.is_error:
         return marked(ELBOW, "dim", Text(f"Read {len(lines)} lines", style="dim"))
-    if not lines:
-        return marked(ELBOW, "dim", Text("(no output)", style="dim"))
-    count = f"… +{len(lines)} line{'s' * (len(lines) != 1)}"
-    return marked(ELBOW, "dim", Text(count, style=style or "dim"))
+    count = f"> {len(lines)} line{'s' * (len(lines) != 1)}" if lines else "> no output"
+    return marked(" ", "", Text(count, style=style or "dim"))
 
 
 def span_label(seconds: float) -> str:
@@ -376,8 +374,8 @@ def render_block(block: Block, show_times: bool = False) -> RenderableType:
     if block.kind == "thinking":
         head = Text("Thinking…", style="dim italic")
         if block.collapsed:
-            return marked(TOOL_DOT, "dim", head)
-        return marked(TOOL_DOT, "dim", Group(head, Text(block.text, style="dim italic")))
+            return marked(TOOL_DOT, "white", head)
+        return marked(TOOL_DOT, "white", Group(head, Text(block.text, style="dim italic")))
     if block.kind == "usage":
         head = Text(usage_summary(block), style="dim")
         if block.collapsed:
