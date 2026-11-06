@@ -176,9 +176,9 @@ installs the package with `uv tool install --force --reinstall`. The command lan
 
 ## Release
 
-- **The version is the git tag.** `hatch-vcs` reads the latest `v*` tag, so the `v0.2.0` tag `wf land` makes is the package version
-  and nothing in the source is bumped. An untagged commit builds as
-  `0.2.1.devN+g<hash>`. `claude_viewer.__version__` and `--version` read the installed
+- **The version is the git tag.** `hatch-vcs` reads the latest `v*` tag, so the `v0.2.0` tag
+  `wf land` makes is the package version and nothing in the source is bumped. An untagged commit
+  builds as `0.2.1.devN+g<hash>`. `claude_viewer.__version__` and `--version` read the installed
   metadata. A build outside a git checkout needs an sdist, which carries the version.
 - `uv build` at the root makes the sdist and wheel, MIT licensed, with
   `README.md` as the long description.
