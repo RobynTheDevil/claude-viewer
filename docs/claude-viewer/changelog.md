@@ -1,5 +1,14 @@
 # claude-viewer: changelog
 
+## 0.2.1 (2026-11-06)
+
+### Changed
+
+- add MIT license, README and package metadata
+- take version from git tag, add --version
+- move package to repo root
+- rewrap release notes
+
 ## 0.2.0 (2026-11-06)
 
 ### Added
