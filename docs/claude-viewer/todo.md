@@ -21,8 +21,11 @@ None open.
 ## enhancements:
 
 - [Usage Shown By Default](issues/open-enh-UsageShownByDefault.md)
+    - Test: no usage lines on open; `U` shows them; `--usage` shows them from the start.
 - [Status Line Crowded](issues/open-enh-StatusLineCrowded.md)
+    - Test: the status line reads as asked; `?` opens the help with filter, usage and times; Esc, `q` or `?` closes it.
 - [Blocks Too Spaced](issues/open-enh-BlocksTooSpaced.md)
+    - Test: ` ⎿ ` elbow; a run of collapsed calls has no blank lines; a collapsed result shows only `… +N lines`; `y` copies without markers.
 
 ## back-burner:
 
