@@ -14,7 +14,8 @@ Fit more of a session on screen: smaller indents, and collapsed blocks packed to
 - Every nested indent is one space, like the prompt's `> `: the elbow is ` ⎿ ` and note
   bodies indent 1.
 - A collapsed block has no blank line after it; an expanded one keeps it.
-- A collapsed result shows only ` > N lines` (` > 1 line`, ` > no output` when empty). A
+- A collapsed result shows only `> N lines` at column 0, level with a command's `$`
+  (`> 1 line`, `> no output` when empty). A
   collapsed Read's `Read N lines` and an Edit's summary stay. A Bash command keeps its
   3-line preview.
 - The cursor gutter is one column: `▌` on the cursor block, a space elsewhere.

@@ -53,7 +53,12 @@ class Block:
 
     @property
     def group(self) -> str:
-        return self.tool if self.kind == "tool" else self.kind
+        if self.kind != "tool":
+            return self.kind
+        from claude_viewer.access import SHELL_TOOLS, is_write
+        if self.tool in SHELL_TOOLS:
+            return f"{self.tool} {'write' if is_write(self) else 'read'}"
+        return self.tool
 
     @property
     def collapsible(self) -> bool:

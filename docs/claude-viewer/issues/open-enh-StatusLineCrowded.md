@@ -14,6 +14,8 @@ full key list lives only in `project.md`.
 - The status line reads
   `3/214 · enter toggle  o/x open/close  O/X all[tool]  - outline  / find  ctrl+c quit  ? help`,
   with the cursor block's group in the brackets.
+- A shell call's group is `Bash read` or `Bash write`, by `access.is_write`, so `O`/`X` open
+  or close the reads and writes separately.
 - The visual-mode prefix, the filter name (`3/214 changes`) and a notice (`3 lines copied`,
   `not found`) still show, after the count.
 - `?` expands a help panel above the status line: the filter, usage, times and scrollbar

@@ -325,7 +325,7 @@ def tool_body(block: Block) -> RenderableType:
     if block.tool == "Read" and not block.is_error:
         return marked(ELBOW, "dim", Text(f"Read {len(lines)} lines", style="dim"))
     count = f"> {len(lines)} line{'s' * (len(lines) != 1)}" if lines else "> no output"
-    return marked(" ", "", Text(count, style=style or "dim"))
+    return Text(count, style=style or "dim")
 
 
 def span_label(seconds: float) -> str:

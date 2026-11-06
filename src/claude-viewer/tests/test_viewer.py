@@ -47,7 +47,7 @@ def test_print_shows_default_view(transcript):
     assert "> Please fix the widget" in text
     assert re.search(r"^\$ ls -la *$", text, re.M)
     assert "• Thinking…" in text
-    assert re.search(r"^ > 5 lines *$", text, re.M)
+    assert re.search(r"^> 5 lines *$", text, re.M)
     assert "• Update(/w/widget.py)" in text
     assert "+x = 2" in text
     assert "secret" not in text and "Skill body" not in text and "sidechain" not in text
@@ -559,7 +559,7 @@ def test_command_header_full_when_expanded():
     short = Block("tool", tool="Bash", input={"command": "ls\npwd"}, result="ok")
     with console.capture() as cap:
         console.print(render_block(short))
-    assert "…" not in cap.get() and re.search(r"^ > 1 line *$", cap.get(), re.M)
+    assert "…" not in cap.get() and re.search(r"^> 1 line *$", cap.get(), re.M)
 
 
 def test_command_languages():
@@ -589,7 +589,7 @@ def test_status_line_and_help(transcript):
         await pilot.press("right_curly_bracket", "right_curly_bracket", "right_curly_bracket")
         status = str(app.screen.query_one("#status").render())
         assert status.startswith(f"{view.position}/{view.visible_count} · enter toggle")
-        assert status.endswith("O/X all[Bash]  - outline  / find  ctrl+c quit  ? help")
+        assert status.endswith("O/X all[Bash read]  - outline  / find  ctrl+c quit  ? help")
         help = app.screen.query_one("#help")
         assert not help.display
         await pilot.press("question_mark")
@@ -609,3 +609,11 @@ def test_status_line_and_help(transcript):
         await pilot.press("slash", "a", "question_mark")
         assert app.screen.query_one("#find").value == "a?" and not help.display
     run_view(transcript, script, size=(120, 40))
+
+
+def test_shell_groups_split_by_access():
+    from claude_viewer.transcript import Block
+    read = Block("tool", tool="Bash", input={"command": "git status"})
+    write = Block("tool", tool="Bash", input={"command": "rm x"})
+    edit = Block("tool", tool="Edit", input={"file_path": "a"})
+    assert (read.group, write.group, edit.group) == ("Bash read", "Bash write", "Edit")
