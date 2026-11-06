@@ -20,7 +20,9 @@ None open.
 
 ## enhancements:
 
-None open.
+- Commands show in full: no `…` unless the command spans more than 3 lines, and none once
+  expanded.
+    - Test: a long one-line Bash shows whole and wraps; `o` on a heredoc call shows every line.
 
 ## back-burner:
 

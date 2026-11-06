@@ -21,7 +21,7 @@ from textual.widgets import Input, OptionList, Static
 from textual.widgets.option_list import Option
 
 from claude_viewer.editor import editor_command, file_target, local_path
-from claude_viewer.render import render_block, tool_header
+from claude_viewer.render import header_plain, render_block
 from claude_viewer.selection import (
     cell_to_index,
     first_nonblank,
@@ -45,7 +45,7 @@ SELECTED = Style(bgcolor="#264f78")
 
 
 def searchable(block: Block) -> str:
-    parts = [block.text, tool_header(block).plain if block.kind == "tool" else "", block.result or ""]
+    parts = [block.text, header_plain(block) if block.kind == "tool" else "", block.result or ""]
     parts.extend(v for v in block.input.values() if isinstance(v, str))
     return "\n".join(parts)
 

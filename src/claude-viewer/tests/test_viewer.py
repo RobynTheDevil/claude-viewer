@@ -479,3 +479,27 @@ def test_open_and_close_blocks(transcript):
         await pilot.press("X")
         assert blocks[thinking].collapsed
     run_view(transcript, script, size=(100, 30))
+
+
+def test_command_header_full_when_expanded():
+    from claude_viewer.render import render_block
+    from claude_viewer.transcript import Block
+    command = "echo " + "x" * 150 + "\n" + "\n".join(f"echo {n}" for n in range(6))
+    block = Block("tool", tool="Bash", input={"command": command}, result="ok")
+    console = Console(width=200, file=io.StringIO(), color_system=None)
+
+    def shown(collapsed):
+        block.collapsed = collapsed
+        with console.capture() as cap:
+            console.print(render_block(block))
+        return cap.get()
+
+    collapsed = shown(True)
+    assert "x" * 150 in collapsed and "echo 1" in collapsed and "echo 2" not in collapsed
+    assert "… +4 lines" in collapsed
+    expanded = shown(False)
+    assert "echo 5)" in expanded and "… +" not in expanded
+    short = Block("tool", tool="Bash", input={"command": "ls\npwd"}, result="ok")
+    with console.capture() as cap:
+        console.print(render_block(short))
+    assert "…" not in cap.get()

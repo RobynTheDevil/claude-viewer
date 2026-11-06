@@ -3,7 +3,7 @@ from __future__ import annotations
 import html
 import re
 
-from claude_viewer.render import patch_counts, tool_arg, tool_label, usage_summary
+from claude_viewer.render import command_lines, patch_counts, tool_arg, tool_label, usage_summary
 from claude_viewer.transcript import Block, Session
 
 
@@ -29,8 +29,12 @@ def diff_text(patch: list) -> str:
 
 
 def tool_markdown(block: Block) -> str:
-    arg = tool_arg(block, width=200)
-    head = f"**{tool_label(block)}**" + (f" `{arg}`" if arg else "")
+    lines = command_lines(block)
+    if lines is not None and len(lines) > 1:
+        head = f"**{tool_label(block)}**\n\n" + fence("\n".join(lines), "sh")
+    else:
+        arg = lines[0] if lines else tool_arg(block, width=200)
+        head = f"**{tool_label(block)}**" + (f" `{arg}`" if arg else "")
     if block.is_error:
         head += " *(error)*"
     if block.result is None:

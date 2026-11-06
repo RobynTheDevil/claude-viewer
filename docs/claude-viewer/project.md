@@ -57,6 +57,7 @@ record kind the parser handles.
 | Command | `claude-viewer` |
 | Opening | No argument: a picker of the current directory's project sessions, like `/resume`; `--all` lists every project. A session ID, ID prefix or `.jsonl` path opens that session. |
 | Default view | Prompts and replies in full, each tool call on one line with its output collapsed, file-edit diffs open. |
+| Commands | Never cut at a width. Collapsed shows up to 3 lines then `… +N lines`; expanded shows all of it. |
 | Similar calls | Calls to the same tool: every Bash, every Read, every Edit. `O`/`X` act on them together. |
 | Shown collapsed | Thinking blocks, attachments (one line with the file name), per-message token usage and model. |
 | Not shown | System reminders, `isMeta` text, subagent turns. |

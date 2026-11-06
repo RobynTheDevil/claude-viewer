@@ -54,6 +54,13 @@ def tool_arg(block: Block, width: int = 100) -> str:
     return first
 
 
+def command_lines(block: Block) -> list[str] | None:
+    command = block.input.get("command")
+    if not isinstance(command, str):
+        return None
+    return command.strip().splitlines() or [""]
+
+
 def patch_counts(patch: list) -> tuple[int, int]:
     added = removed = 0
     for hunk in patch:
@@ -189,14 +196,30 @@ def read_body(block: Block) -> Text | None:
     return out
 
 
-def tool_header(block: Block) -> Text:
+def header_plain(block: Block) -> str:
+    lines = command_lines(block)
+    arg = "\n".join(lines) if lines is not None else tool_arg(block)
+    return tool_label(block) + (f"({arg})" if arg else "")
+
+
+def tool_header(block: Block, suffix: str = "") -> Table:
     style = "red" if block.is_error else ("green" if block.result is not None else "dim")
-    text = Text(DOT, style=style)
-    text.append(tool_label(block), style="bold")
-    arg = tool_arg(block)
-    if arg:
-        text.append(f"({arg})")
-    return text
+    text = Text(tool_label(block), style="bold")
+    lines = command_lines(block)
+    if lines is None:
+        arg = tool_arg(block)
+        if arg:
+            text.append(f"({arg})")
+        text.append(suffix, style="dim")
+        return marked(DOT, style, text)
+    shown = lines if not block.collapsed else lines[:PREVIEW_LINES]
+    text.append("(" + shown[0] + (")" if len(shown) == 1 else ""))
+    text.append(suffix, style="dim")
+    if len(shown) > 1:
+        text.append("\n" + "\n".join(shown[1:]) + ")")
+    if len(lines) > len(shown):
+        text.append(f"\n… +{len(lines) - len(shown)} lines", style="dim")
+    return marked(DOT, style, text)
 
 
 def output(text: str, style: str = "") -> Text:
@@ -267,10 +290,7 @@ def render_block(block: Block, show_times: bool = False) -> RenderableType:
     if block.kind == "text":
         return marked(DOT, "white", Markdown(block.text))
     if block.kind == "tool":
-        header = tool_header(block)
-        if suffix:
-            header.append(suffix, style="dim")
-        return Group(header, tool_body(block))
+        return Group(tool_header(block, suffix), tool_body(block))
     if block.kind == "thinking":
         head = Text("✻ Thinking…", style="dim italic")
         if block.collapsed:
