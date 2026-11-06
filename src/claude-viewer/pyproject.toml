@@ -2,8 +2,24 @@
 name = "claude-viewer"
 version = "0.1.0"
 description = "View Claude Code session transcripts in the terminal"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Robyn Murdock" }]
 requires-python = ">=3.12"
 dependencies = ["rich>=13", "textual>=8"]
+keywords = ["claude", "claude-code", "transcript", "viewer", "tui"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Utilities",
+]
 
 [project.scripts]
 claude-viewer = "claude_viewer.cli:main"
@@ -17,3 +33,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["claude_viewer"]
+
+[tool.hatch.build.targets.sdist]
+include = ["claude_viewer", "tests", "README.md", "LICENSE"]
