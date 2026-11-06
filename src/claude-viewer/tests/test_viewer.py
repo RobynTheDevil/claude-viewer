@@ -67,7 +67,7 @@ def test_cli_export_stdout(transcript, capsys):
 
 def test_view_toggles_and_groups(transcript):
     async def run():
-        app = ViewerApp(session=parse(transcript))
+        app = ViewerApp(session=parse(transcript), show_usage=True)
         async with app.run_test(size=(100, 30)) as pilot:
             view = app.screen.query_one(TranscriptView)
             blocks = view.blocks
@@ -97,9 +97,9 @@ def test_ansi_output_is_styled_not_raw(transcript):
     assert "\x1b" not in to_markdown(session)
 
 
-def run_view(path, script, size=(80, 12)):
+def run_view(path, script, size=(80, 12), show_usage=False):
     async def run():
-        app = ViewerApp(session=parse(path))
+        app = ViewerApp(session=parse(path), show_usage=show_usage)
         async with app.run_test(size=size) as pilot:
             view = app.screen.query_one(TranscriptView)
             await script(app, view, pilot)
@@ -237,6 +237,9 @@ def test_regex_search_in_view(long_transcript):
 def test_usage_toggle_and_flag(transcript, capsys):
     async def script(app, view, pilot):
         usage = [i for i, b in enumerate(view.blocks) if b.kind == "usage"]
+        assert not any(view.shown[i] for i in usage)
+        await pilot.press("U")
+        assert all(view.shown)
         before = view.virtual_size.height
         await pilot.press("U")
         assert not any(view.shown[i] for i in usage)
@@ -251,10 +254,14 @@ def test_usage_toggle_and_flag(transcript, capsys):
         await pilot.press("U")
         assert all(view.shown)
     run_view(transcript, script, size=(100, 30))
-    assert main([str(transcript), "--export", "-", "--no-usage"]) == 0
+    assert main([str(transcript), "--export", "-"]) == 0
     assert "<sub>" not in capsys.readouterr().out
-    assert main([str(transcript), "--print", "--no-usage"]) == 0
+    assert main([str(transcript), "--export", "-", "--usage"]) == 0
+    assert "<sub>" in capsys.readouterr().out
+    assert main([str(transcript), "--print"]) == 0
     assert "· claude-opus" not in capsys.readouterr().out
+    assert main([str(transcript), "--print", "--usage"]) == 0
+    assert "· claude-opus" in capsys.readouterr().out
 
 
 def test_filter_changes_and_read_only(transcript):
@@ -272,7 +279,7 @@ def test_filter_changes_and_read_only(transcript):
         assert "changes" in str(app.screen.query_one("#status").render())
         await pilot.press("f")
         assert view.filter == "all" and all(view.shown)
-    run_view(transcript, script, size=(100, 30))
+    run_view(transcript, script, size=(100, 30), show_usage=True)
 
 
 def test_outline_menu(long_transcript):
@@ -441,7 +448,7 @@ def test_less_keys_match_their_ctrl_forms(long_transcript):
         assert view.cursor == 0
         await pilot.press("greater_than_sign")
         assert view.cursor == len(view.blocks) - 1
-    run_view(long_transcript, script, size=(80, 20))
+    run_view(long_transcript, script, size=(80, 20), show_usage=True)
 
 
 def test_only_ctrl_c_quits(transcript):

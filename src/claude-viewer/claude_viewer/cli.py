@@ -17,7 +17,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("-a", "--all", action="store_true", help="pick from every project, not only the current directory's")
     parser.add_argument("-p", "--print", dest="print_", action="store_true", help="print the default view to stdout and exit")
     parser.add_argument("-o", "--export", metavar="FILE", help="write the session as Markdown to FILE, or - for stdout")
-    parser.add_argument("--no-usage", dest="usage", action="store_false", help="hide per-message token usage")
+    parser.add_argument("--usage", action=argparse.BooleanOptionalAction, default=False, help="show per-message token usage")
     args = parser.parse_args(argv)
 
     path = None

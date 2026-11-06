@@ -129,7 +129,7 @@ class TranscriptView(ScrollView, can_focus=True):
             super().__init__()
             self.text = text
 
-    def __init__(self, blocks: list[Block], show_usage: bool = True, **kwargs) -> None:
+    def __init__(self, blocks: list[Block], show_usage: bool = False, **kwargs) -> None:
         super().__init__(**kwargs)
         self.blocks = blocks
         self.show_usage = show_usage
@@ -647,7 +647,7 @@ class SessionScreen(Screen):
         Binding("escape", "escape", "Back", show=False),
     ]
 
-    def __init__(self, session: Session, standalone: bool, show_usage: bool = True) -> None:
+    def __init__(self, session: Session, standalone: bool, show_usage: bool = False) -> None:
         super().__init__()
         self.session = session
         self.standalone = standalone
@@ -853,7 +853,7 @@ class ViewerApp(App):
         session: Session | None = None,
         sessions: list[SessionInfo] | None = None,
         show_project: bool = False,
-        show_usage: bool = True,
+        show_usage: bool = False,
     ) -> None:
         super().__init__()
         self.session = session

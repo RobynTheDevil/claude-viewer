@@ -64,7 +64,8 @@ record kind the parser handles.
 | Command colors | `shell.py` colors each simple command's name, flags, strings, variables, operators and redirects; Pygments' Bash lexer colors only builtins and reads a mid-word `#` as a comment. A heredoc body in its own language: the interpreter it feeds (`python3 - <<EOF`) or the suffix of the file it is written to (`cat > a.rs <<EOF`). |
 | Read or write | The dot and tool name are cyan for a read and yellow for a write; the dot is red on an error and dim with no result. |
 | Similar calls | Calls to the same tool: every Bash, every Read, every Edit. `O`/`X` act on them together. |
-| Shown collapsed | Thinking blocks, attachments (one line with the file name), per-message token usage and model. |
+| Shown collapsed | Thinking blocks, attachments (one line with the file name). |
+| Hidden until asked | Per-message token usage and model: `U` or `--usage`. |
 | Not shown | System reminders, `isMeta` text, subagent turns. |
 
 Keys, vim style with less's paging keys too. Arrow keys work as `h`/`j`/`k`/`l`.
@@ -118,8 +119,8 @@ the whole cache. A call is a change when `access.is_write` says so: it has a `st
 Edit, Write or NotebookEdit, or is a shell command that writes. A command counts as a write
 unless every simple command in it is a known reader, so an unknown program is a write. Prompts and replies show under every filter,
 thinking and notes only under all, and a usage line only while a block of its message shows.
-`--no-usage` starts with usage hidden and leaves it out of `--print` and `--export`. No
-settings file exists; an alias carries the flag.
+Usage starts hidden and is left out of `--print` and `--export`; `--usage` shows it in all
+three. No settings file exists; an alias carries the flag.
 
 The outline is an `OptionList` above the status line, at most 10 rows. It changes only the
 view's height, so opening it re-renders nothing. It opens on the prompt containing the

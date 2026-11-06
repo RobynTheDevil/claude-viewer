@@ -378,7 +378,7 @@ def render_block(block: Block, show_times: bool = False) -> RenderableType:
     return Text(block.text)
 
 
-def print_session(session: Session, console: Console | None = None, usage: bool = True) -> None:
+def print_session(session: Session, console: Console | None = None, usage: bool = False) -> None:
     console = console or Console()
     console.print(Text(session.title, style="bold"))
     console.print(Text(session.session_id, style="dim"))
