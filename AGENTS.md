@@ -24,13 +24,10 @@ now. Tracking "this was attempted N times", "the last build", etc. is not releva
     Scripts for searching, checking and building. Tracked, shared across all projects.
     docs/tooling.md documents them and is loaded in full below.
 
-## ./src
-    One subfolder per project. Tracked, except build output (see .gitignore) which is
-    generated or machine-specific.
-
-## ./src/claude-viewer
-    The viewer for Claude Code session transcripts, a Python CLI on Textual and Rich. Working.
-    Read docs/claude-viewer/project.md before editing it.
+## ./src/claude_viewer, ./tests, ./pyproject.toml
+    claude-viewer, the viewer for Claude Code session transcripts, a Python CLI on Textual
+    and Rich. The repo holds this one project. Working. Read docs/claude-viewer/project.md
+    before editing it. README.md and LICENSE at the root are for its users.
 
 ## ./ref
     External reference material. Untracked and never edited.

@@ -33,10 +33,10 @@ build-backend = "hatchling.build"
 
 [tool.hatch.version]
 source = "vcs"
-raw-options = { root = "../..", git_describe_command = "git describe --dirty --tags --long --match v[0-9]*" }
+raw-options = { git_describe_command = "git describe --dirty --tags --long --match v[0-9]*" }
 
 [tool.hatch.build.targets.wheel]
-packages = ["claude_viewer"]
+packages = ["src/claude_viewer"]
 
 [tool.hatch.build.targets.sdist]
-include = ["claude_viewer", "tests", "README.md", "LICENSE"]
+include = ["src/claude_viewer", "tests", "README.md", "LICENSE"]

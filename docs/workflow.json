@@ -35,7 +35,7 @@
         "note": ""
     },
     "deploy": {
-        "source": "src/{project}",
+        "source": "src",
         "artefact": "/home/robyn/.local/share/uv/tools/{project}/bin/{project}",
         "ignore": [],
         "record": null,

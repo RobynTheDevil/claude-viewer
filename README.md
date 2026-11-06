@@ -7,16 +7,16 @@ session or export it to Markdown.
 
 ## Install
 
-Needs Python 3.12 or newer. From a clone of this repository:
+Needs Python 3.12 or newer. From a clone of this repository, in its root:
 
 ```sh
-uv tool install ./src/claude-viewer
+uv tool install .
 ```
 
 or with pipx:
 
 ```sh
-pipx install ./src/claude-viewer
+pipx install .
 ```
 
 ## Use

@@ -1,9 +1,9 @@
 # Read-only reference material, fetched or generated, never edited.
 ref
 
-# Build output and machine-specific build configuration, per project.
-src/*/.venv
-src/*/dist
+# Build output and machine-specific build configuration.
+.venv
+dist
 
 # Language and tool caches.
 __pycache__/

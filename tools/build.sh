@@ -22,14 +22,13 @@
 
 set -euo pipefail
 
-PROJECTS_DIR="src"
 PROJECT="${1:?usage: tools/build.sh <project> [--force]}"
 FORCE=0
 [[ "${2:-}" == "--force" ]] && FORCE=1
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-SRC="$ROOT/$PROJECTS_DIR/$PROJECT"
-[[ -d "$SRC" ]] || { echo "no such project: $SRC" >&2; exit 2; }
+SRC="$ROOT"
+grep -q "^name = \"$PROJECT\"" "$SRC/pyproject.toml" || { echo "no such project: $PROJECT" >&2; exit 2; }
 
 # 1. Build. Capture the status before any filtering.
 status=0

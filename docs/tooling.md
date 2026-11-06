@@ -26,6 +26,10 @@ tools/build.sh <project> [--force]
   anyway.
 - Print enough that a caller can tell success from failure without parsing prose.
 
+This repo holds one project at its root, so `<project>` must be the `name` in
+`pyproject.toml`, `claude-viewer`. The build runs the tests there with `uv run pytest` and
+installs with `uv tool install`.
+
 Everything about toolchains, cross-platform paths and deploy locations lives in that script
 and in this document's repo-specific sections, not in `buildseries.sh` or the `workflow` skill.
 
@@ -35,7 +39,7 @@ A fresh tree cannot compile: everything the build needs is gitignored, so the ne
 none of it. The `worktree` section of `docs/workflow.json` says what `wf new` links, copies
 and runs; this section says why, for anything that is not obvious:
 
-Nothing. `uv run` in `tools/build.sh` makes the tree's own `src/<project>/.venv` from
+Nothing. `uv run` in `tools/build.sh` makes the tree's own `.venv` from
 `uv.lock` on the first build, so the `worktree` section links and copies nothing.
 
 Copying rather than linking is sometimes forced: a build that runs under a different
@@ -52,14 +56,15 @@ tools/buildseries.sh <project> main --test       # --test passed on to build.sh
 
 Checks that every commit in a range compiles on its own, which is what makes `git bisect`
 worth anything and what `workflow.md` requires before a branch lands. It checks out the
-project directory at each commit, builds it with `tools/build.sh`, prints `ok` or `FAIL`
-against the commit's subject, and exits non-zero if any failed. A commit from before the
-project directory existed prints `skip` and is not built. It stops at the first failure
+project paths at each commit (`src`, `tests`, `pyproject.toml`, `uv.lock`, `README.md`,
+`LICENSE`, set by `PROJECT_PATHS`), builds it with `tools/build.sh`, prints `ok` or `FAIL`
+against the commit's subject, and exits non-zero if any failed. A commit with no root
+`pyproject.toml` prints `skip` and is not built. It stops at the first failure
 unless `--keep-going` is passed. Any other `--` flag is passed on to `tools/build.sh` at each
 commit, for whatever flags this repo's build defines; the rebuild of HEAD on the way out
 takes only `--force`.
 
-Clearing every tracked file under the project directory from the tree and the index before
+Clearing every tracked file under the project paths from the tree and the index before
 each checkout is why this is a script rather than a one-liner. `git checkout <commit> --
 <path>` writes the files that exist at that commit into both and leaves behind any file the
 previous iteration created, so a commit missing a source file builds against a later commit's
@@ -67,8 +72,8 @@ copy and reports a false pass. A leftover data file is worse: the next `git add`
 back, which is how a deleted file once reached `main`. The reverse mistake once made all
 fourteen commits of a series report a false failure.
 
-Two guards. It refuses to run while the project directory has uncommitted changes, since it
-deletes and rewrites that directory. And it rebuilds and redeploys HEAD on the way out, on a
+Two guards. It refuses to run while the project paths have uncommitted changes, since it
+deletes and rewrites them. And it rebuilds and redeploys HEAD on the way out, on a
 failure and on a Ctrl-C as well as on success, because each iteration deploys and would
 otherwise leave an old artefact there for the next test.
 
