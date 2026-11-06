@@ -8,6 +8,12 @@ An entry is one item: the line from the todo, compacted, with a link to its repo
 sentence on what the change was. Not the investigation, not the alternatives, not the rounds
 it took. This file is history and is not read as reference.
 
+- [x] Compact layout: one-cell indents and gutter, $ for Bash, > N lines, new open defaults ([report](issues/done/done-enh-BlocksTooSpaced.md))
+
+- [x] Short status line, ? help panel, ctrl+s scrollbar, Bash read/write groups ([report](issues/done/done-enh-StatusLineCrowded.md))
+
+- [x] Token usage hidden by default; --usage or U shows it ([report](issues/done/done-enh-UsageShownByDefault.md))
+
 - [x] Commands show in full: `…` only past 3 lines, none once expanded.
 
 - [x] Commands drawn under `• Bash`, syntax-colored, heredoc bodies in their own language.
