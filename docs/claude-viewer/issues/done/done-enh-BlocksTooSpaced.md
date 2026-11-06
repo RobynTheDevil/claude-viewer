@@ -34,8 +34,8 @@ Fit more of a session on screen: smaller indents, and collapsed blocks packed to
 ## Design
 ### 1. Constants and one condition
 Change the marker strings in `render.py` and the matching `MARKERS`/`MARKER_WIDTH` in
-`selection.py`. Add `not block.collapsed` to the blank-line condition: the blank depends only
-on the block itself, which a toggle re-renders. Replace the output preview with the count.
+`selection.py`. `render.spaced` decides the blank line from the block itself, which a toggle
+re-renders, and `--print` uses it too. Replace the output preview with the count.
 
 ## Affected Code
 - `src/claude-viewer/claude_viewer/render.py:28-30`, `:293-317`, `:360-377`

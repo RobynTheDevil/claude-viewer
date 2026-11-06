@@ -15,7 +15,7 @@ Open work is in [todo.md](todo.md).
 - **The scrollbar gutter is reserved.** `scrollbar-gutter: stable` keeps the content width
   fixed whether the scrollbar shows or not. Without it the first layout renders too wide, and
   the next resize re-renders every block. The gutter is 0 cells, or 1 with the `scrollbar`
-  class; `ctrl+s` changes the width without a resize, so it reflows through `_reflow`.
+  class; `ctrl+s` changes the width without a resize event, so it reflows through `_reflow`.
 - **Per-line overlays are drawn in `render_line`, never cached.** Match highlights and the
   gutter go on the strip as it is drawn, so a new query or a cursor move re-renders nothing.
   Map a character index to a cell with `selection.index_to_cell`, not Textual's
@@ -60,11 +60,11 @@ record kind the parser handles.
 |---|---|
 | Command | `claude-viewer` |
 | Opening | No argument: a picker of the current directory's project sessions, like `/resume`; `--all` lists every project. A session ID, ID prefix or `.jsonl` path opens that session. |
-| Default view | Everything open except Read calls, read-only shell calls, attachments and usage lines (`transcript.starts_collapsed`). A collapsed call's output is `> N lines`, level with a command's `$`; a collapsed Read says `Read N lines`. Replies, tool calls, thinking and usage start with a `• ` dot; a reply's and thinking's are white. |
+| Default view | Everything open except Read calls, read-only shell calls, attachments and usage lines (`transcript.starts_collapsed`). A collapsed call's output is `> N lines`, level with a command's `$`; a collapsed Read says `Read N lines`. Every block but a prompt or a Bash call starts with a `• ` dot, white on a reply or thinking. |
 | Spacing | A blank line after an expanded block and after every shell call; none after a collapsed one or an attachment. Nested lines indent one cell, like the prompt's `> `: the result elbow is ` ⎿ `. The cursor gutter is one column, `▌` beside the cursor block. |
-| Commands | A Bash call reads `$ <command>`, the `$` in the dot's color; other shells' commands sit on the lines under `• PowerShell`. Neither a command nor another tool's argument is cut at a width. A command wraps at spaces, and a word too long for a whole line is split at the edge by character so it starts where it stands (`render.wrap_cuts`). Rich's own wrap moves such a word to its own line and the grid crops it with `…`. Collapsed shows up to 3 lines then `… +N lines`; expanded shows all of it. |
+| Commands | A Bash call reads `$ <command>`, the `$` in the dot's color; other shells' commands sit on the lines under `• PowerShell`. No command or tool argument is cut at a width. A command wraps at spaces, and a word wider than a line is split by character where it stands (`render.wrap_cuts`); Rich's own wrap would move it to its own line, where the grid crops it with `…`. Collapsed shows up to 3 lines then `… +N lines`; expanded shows all of it. |
 | Command colors | `shell.py` colors each simple command's name, flags, strings, variables, operators and redirects; Pygments' Bash lexer colors only builtins and reads a mid-word `#` as a comment. A heredoc body in its own language: the interpreter it feeds (`python3 - <<EOF`) or the suffix of the file it is written to (`cat > a.rs <<EOF`). |
-| Read or write | The dot and tool name are cyan for a read and yellow for a write; the dot is red on an error and dim with no result. |
+| Read or write | The dot or `$` and the tool name are cyan for a read and yellow for a write; the dot is red on an error and dim with no result. |
 | Similar calls | Calls to the same tool: every Read, every Edit. Shell calls split by `access.is_write` into `Bash read` and `Bash write`. `O`/`X` act on them together, and the status line names the group. |
 | Attachments | Kind `attachment`: one line, the file name or `[Image]`, nothing to expand. |
 | Hidden until asked | Per-message token usage and model, a dim `• ` line: `U` or `--usage`. The scrollbar: `ctrl+s`. |
@@ -112,26 +112,27 @@ with its bullets and indentation. The text goes to `App.copy_to_clipboard` (OSC 
 under WSL, to `clip.exe` as UTF-16 LE with CRLF line ends and no BOM, since `clip.exe`
 pastes a BOM as a character.
 
-The status line is the position, then the visual mode, filter and last notice when there
-are any, then the common keys: `3/214 · enter toggle  o/x open/close  O/X all[Bash]  -
+The status line is the position, the visual mode, filter and last notice when set, then the
+common keys: `3/214 · enter toggle  o/x open/close  O/X all[Bash]  -
 outline  / find  ctrl+c quit  ? help`, the brackets naming the cursor block's group. The rest
 are in the help, a `Static` docked above the status line whose key list is `HELP_KEYS` in
-`app.py`. `SessionScreen.on_key` opens it on the `?` character rather than a binding, and not
-while the find box has focus.
+`app.py`. `SessionScreen.on_key` opens it on the `?` character, not a binding, and not while the
+find box has focus.
 
 Two-key motions go through a prefix handler in `TranscriptView.on_key`; a first key followed
 by anything else, or by nothing for 1 s, does nothing.
 
-**Hidden blocks take no lines.** The filter and the usage toggle set `TranscriptView.shown`;
-a hidden block's strips are empty, so `bisect_right` over the offsets lands on the visible
-block after a run of hidden ones. Motions, search and `O`/`X`/`E`/`C` skip hidden blocks, and
-the blank line after an expanded block is left out when a usage line follows, so a change of
-visibility clears the whole cache. `render.spaced` decides the blank for the view and `--print`. A call is a change when `access.is_write` says so: it has a `structuredPatch`, is an
-Edit, Write or NotebookEdit, or is a shell command that writes. A command counts as a write
-unless every simple command in it is a known reader, so an unknown program is a write. Prompts and replies show under every filter,
-thinking and notes only under all, and a usage line only while a block of its message shows.
-Usage starts hidden and is left out of `--print` and `--export`; `--usage` shows it in all
-three. No settings file exists; an alias carries the flag.
+**Hidden blocks take no lines.** The filter and the usage toggle set `TranscriptView.shown`; a
+hidden block's strips are empty, so `bisect_right` over the offsets lands on the visible block
+after a run of hidden ones. Motions, search and `O`/`X`/`E`/`C` skip hidden blocks, and the
+blank line after an expanded block is left out when a usage line follows, so a change of
+visibility clears the whole cache. `render.spaced` decides the blank for the view and `--print`.
+A call is a change when `access.is_write` says so: it has a `structuredPatch`, is an Edit, Write
+or NotebookEdit, or is a shell command that writes. A command counts as a write unless every
+simple command in it is a known reader, so an unknown program is a write. Prompts and replies
+show under every filter, thinking and notes only under all, and a usage line only while a block
+of its message shows. Usage starts hidden and is left out of `--print` and `--export`; `--usage`
+shows it in all three. No settings file exists; an alias carries the flag.
 
 The outline is an `OptionList` above the status line, at most 10 rows. It changes only the
 view's height, so opening it re-renders nothing. It opens on the prompt containing the
