@@ -20,7 +20,9 @@ None open.
 
 ## enhancements:
 
-None open.
+- [Usage Shown By Default](issues/open-enh-UsageShownByDefault.md)
+- [Status Line Crowded](issues/open-enh-StatusLineCrowded.md)
+- [Blocks Too Spaced](issues/open-enh-BlocksTooSpaced.md)
 
 ## back-burner:
 
