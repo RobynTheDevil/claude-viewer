@@ -16,15 +16,17 @@ full key list lives only in `project.md`.
   with the cursor block's group in the brackets.
 - The visual-mode prefix, the filter name (`3/214 changes`) and a notice (`3 lines copied`,
   `not found`) still show, after the count.
-- `?` opens a help screen listing every key, including `f`, `U` and `t`. Esc, `q` or `?`
-  closes it.
+- `?` expands a help panel above the status line: the filter, usage, times and scrollbar
+  state and every key, including `f`, `U`, `t` and `ctrl+s`. Esc, `q` or `?` closes it. `?`
+  in the find box types a `?`.
+- `ctrl+s` shows or hides the scrollbar, hidden by default.
 
 ## Design
-### 1. Rewrite the hint, add a `ModalScreen`
-The hint becomes one fixed string with the group in it. `HelpScreen(ModalScreen)` holds a
-scrollable `Static` of the key table, pushed by a `question_mark` binding on `SessionScreen`.
-No modal exists in the code yet; the outline is a docked `OptionList`, which suits a menu but
-not a reference page.
+### 1. Rewrite the hint, dock a help panel
+The hint becomes one fixed string with the group in it. The help is a hidden `Static` docked
+above the status line like the outline, opened from `SessionScreen.on_key` on the `?`
+character. A first build pushed a `ModalScreen` from a `question_mark` binding; it passed the
+pilot test and did nothing in Robyn's terminal, so the key is matched by character.
 
 ## Affected Code
 - `src/claude-viewer/claude_viewer/app.py:640-647`: `SessionScreen.BINDINGS`

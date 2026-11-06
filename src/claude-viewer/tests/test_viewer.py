@@ -4,9 +4,8 @@ import json
 import re
 
 from rich.console import Console
-from textual.widgets import Static
 
-from claude_viewer.app import HelpScreen, TranscriptView, ViewerApp
+from claude_viewer.app import TranscriptView, ViewerApp
 from claude_viewer.cli import main
 from claude_viewer.export import to_markdown
 from claude_viewer.render import print_session, spaced
@@ -46,7 +45,8 @@ def test_print_shows_default_view(transcript):
     print_session(parse(transcript), Console(file=out, width=100, color_system=None))
     text = out.getvalue()
     assert "> Please fix the widget" in text
-    assert re.search(r"• Bash *\n  ls -la", text)
+    assert re.search(r"^\$ ls -la *$", text, re.M)
+    assert "• Thinking…" in text
     assert " ⎿ … +5 lines" in text
     assert "• Update(/w/widget.py)" in text
     assert "+x = 2" in text
@@ -151,7 +151,7 @@ def test_visual_line_yank(long_transcript, monkeypatch):
     async def script(app, view, pilot):
         bash = next(i for i, b in enumerate(view.blocks) if b.kind == "tool")
         view.action_jump(bash)
-        await pilot.press("enter", "j", "j", "V", "j", "j")
+        await pilot.press("enter", "j", "V", "j", "j")
         assert view.mode == "line"
         assert "VISUAL LINE" in str(app.screen.query_one("#status").render())
         await pilot.press("y")
@@ -163,7 +163,7 @@ def test_visual_line_yank(long_transcript, monkeypatch):
         await pilot.press("v", "dollar_sign", "y")
         assert copied[-1] == "line 0"
         view.action_jump(bash)
-        await pilot.press("j", "w", "v", "w", "y")
+        await pilot.press("w", "v", "w", "y")
         assert copied[-1] == "echo 0"
     run_view(long_transcript, script, size=(80, 30))
 
@@ -198,7 +198,7 @@ def test_prompt_jumps(long_transcript):
         assert view.cursor == prompts[3]
         await pilot.press("g", "g")
         assert view.cursor == 0
-    run_view(long_transcript, script, size=(80, 30))
+    run_view(long_transcript, script, size=(80, 30), show_usage=True)
 
 
 def test_compile_query_smart_case():
@@ -262,9 +262,9 @@ def test_usage_toggle_and_flag(transcript, capsys):
     assert main([str(transcript), "--export", "-", "--usage"]) == 0
     assert "<sub>" in capsys.readouterr().out
     assert main([str(transcript), "--print"]) == 0
-    assert "· claude-opus" not in capsys.readouterr().out
+    assert "• claude-opus" not in capsys.readouterr().out
     assert main([str(transcript), "--print", "--usage"]) == 0
-    assert "· claude-opus" in capsys.readouterr().out
+    assert "• claude-opus" in capsys.readouterr().out
 
 
 def test_filter_changes_and_read_only(transcript):
@@ -543,7 +543,7 @@ def test_command_header_full_when_expanded():
     assert "x" * 150 in collapsed and "echo 1" in collapsed and "echo 2" not in collapsed
     assert "… +4 lines" in collapsed
     expanded = shown(False)
-    assert expanded.splitlines()[0].strip() == "• Bash"
+    assert expanded.splitlines()[0].startswith("$ echo xxx")
     assert "echo 5" in expanded and "… +" not in expanded
     short = Block("tool", tool="Bash", input={"command": "ls\npwd"}, result="ok")
     with console.capture() as cap:
@@ -579,12 +579,22 @@ def test_status_line_and_help(transcript):
         status = str(app.screen.query_one("#status").render())
         assert status.startswith(f"{view.position}/{view.visible_count} · enter toggle")
         assert status.endswith("O/X all[Bash]  - outline  / find  ctrl+c quit  ? help")
+        help = app.screen.query_one("#help")
+        assert not help.display
         await pilot.press("question_mark")
-        assert isinstance(app.screen, HelpScreen)
-        text = str(app.screen.query_one(Static).render())
-        assert "filter all" in text and "usage hidden" in text and "cycle the filter" in text
+        text = str(help.render())
+        assert help.display and "filter all" in text and "usage hidden" in text and "cycle the filter" in text
         await pilot.press("question_mark")
-        assert not isinstance(app.screen, HelpScreen)
+        assert not help.display
         await pilot.press("question_mark", "escape")
-        assert not isinstance(app.screen, HelpScreen) and app.is_running
+        assert not help.display and app.is_running
+        width = view._width
+        await pilot.press("ctrl+s")
+        await pilot.pause()
+        assert view.has_class("scrollbar") and view._width == width - 1
+        await pilot.press("question_mark")
+        assert "scrollbar shown" in str(help.render())
+        await pilot.press("escape")
+        await pilot.press("slash", "a", "question_mark")
+        assert app.screen.query_one("#find").value == "a?" and not help.display
     run_view(transcript, script, size=(120, 40))

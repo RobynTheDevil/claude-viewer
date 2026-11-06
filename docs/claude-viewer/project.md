@@ -13,8 +13,9 @@ Open work is in [todo.md](todo.md).
   cache of rendered strips. Do not mount a widget per block: a 1,000-block session then takes
   seconds to open.
 - **The scrollbar gutter is reserved.** `scrollbar-gutter: stable` keeps the content width
-  fixed whether the scrollbar shows or not. Without it the first layout renders 2 cells too
-  wide, and the next resize re-renders every block.
+  fixed whether the scrollbar shows or not. Without it the first layout renders too wide, and
+  the next resize re-renders every block. The gutter is 0 cells, or 1 with the `scrollbar`
+  class; `ctrl+s` changes the width without a resize, so it reflows through `_reflow`.
 - **Per-line overlays are drawn in `render_line`, never cached.** Match highlights and the
   gutter go on the strip as it is drawn, so a new query or a cursor move re-renders nothing.
   Map a character index to a cell with `selection.index_to_cell`, not Textual's
@@ -60,13 +61,13 @@ record kind the parser handles.
 | Command | `claude-viewer` |
 | Opening | No argument: a picker of the current directory's project sessions, like `/resume`; `--all` lists every project. A session ID, ID prefix or `.jsonl` path opens that session. |
 | Default view | Prompts and replies in full, each tool call on one line with its output collapsed to `… +N lines`, file-edit diffs open. |
-| Spacing | A blank line after an expanded block, none after a collapsed one. Nested lines indent one cell, like the prompt's `> `: the result elbow is ` ⎿ `. |
-| Commands | On the lines under `• Bash`, never cut at a width. Collapsed shows up to 3 lines then `… +N lines`; expanded shows all of it. |
+| Spacing | A blank line after an expanded block, none after a collapsed one. Nested lines indent one cell, like the prompt's `> `: the result elbow is ` ⎿ `. The cursor gutter is one column, `▌` beside the cursor block. |
+| Commands | A Bash call reads `$ <command>`, the `$` in the dot's color; other shells' commands sit on the lines under `• PowerShell`. Never cut at a width. Collapsed shows up to 3 lines then `… +N lines`; expanded shows all of it. |
 | Command colors | `shell.py` colors each simple command's name, flags, strings, variables, operators and redirects; Pygments' Bash lexer colors only builtins and reads a mid-word `#` as a comment. A heredoc body in its own language: the interpreter it feeds (`python3 - <<EOF`) or the suffix of the file it is written to (`cat > a.rs <<EOF`). |
 | Read or write | The dot and tool name are cyan for a read and yellow for a write; the dot is red on an error and dim with no result. |
 | Similar calls | Calls to the same tool: every Bash, every Read, every Edit. `O`/`X` act on them together. |
-| Shown collapsed | Thinking blocks, attachments (one line with the file name). |
-| Hidden until asked | Per-message token usage and model: `U` or `--usage`. |
+| Shown collapsed | Thinking blocks as `• Thinking…`, attachments (one line with the file name). |
+| Hidden until asked | Per-message token usage and model, a dim `• ` line: `U` or `--usage`. The scrollbar: `ctrl+s`. |
 | Not shown | System reminders, `isMeta` text, subagent turns. |
 
 Keys, vim style with less's paging keys too. Arrow keys work as `h`/`j`/`k`/`l`.
@@ -92,7 +93,8 @@ Keys, vim style with less's paging keys too. Arrow keys work as `h`/`j`/`k`/`l`.
 | `t` | show or hide times: a prompt's local time, a call's duration, and the gap before either when over 5 s |
 | `-` | the outline: a menu of every prompt; `j`/`k` and Enter jump, Esc, `q` or `-` close |
 | `/`, `n`/`N` | find by regular expression, next and previous match |
-| `?` | help: the filter, usage and times state and every key; Esc, `q` or `?` close |
+| `ctrl+s` | show or hide the scrollbar |
+| `?` | help: the filter, usage, times and scrollbar state and every key; Esc, `q` or `?` close |
 | Esc | leave visual mode, else clear the match highlights, else back to the list |
 | `q` | leave visual mode, else back to the list |
 | `ctrl+c` | quit; nothing else quits, `ctrl+q` included |
@@ -105,7 +107,7 @@ the caret on the cursor block's first line. The caret and the selection are draw
 `render_line`.
 
 `y` copies the selection as drawn, a wrapped line as its own line, without the gutter or
-the `⏺ `, `• ` and ` ⎿ ` markers and with trailing spaces removed. Rendered Markdown copies
+the `⏺ `, `• `, `$ ` and ` ⎿ ` markers and with trailing spaces removed. Rendered Markdown copies
 with its bullets and indentation. The text goes to `App.copy_to_clipboard` (OSC 52) and,
 under WSL, to `clip.exe` as UTF-16 LE with CRLF line ends and no BOM, since `clip.exe`
 pastes a BOM as a character.
@@ -113,7 +115,9 @@ pastes a BOM as a character.
 The status line is the position, then the visual mode, filter and last notice when there
 are any, then the common keys: `3/214 · enter toggle  o/x open/close  O/X all[Bash]  -
 outline  / find  ctrl+c quit  ? help`, the brackets naming the cursor block's group. The rest
-are in the help, a `ModalScreen` whose key list is `HELP_KEYS` in `app.py`.
+are in the help, a `Static` docked above the status line whose key list is `HELP_KEYS` in
+`app.py`. `SessionScreen.on_key` opens it on the `?` character rather than a binding, and not
+while the find box has focus.
 
 Two-key motions go through a prefix handler in `TranscriptView.on_key`; a first key followed
 by anything else, or by nothing for 1 s, does nothing.

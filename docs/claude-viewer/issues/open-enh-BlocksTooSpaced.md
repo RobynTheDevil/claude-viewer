@@ -11,13 +11,16 @@ Fit more of a session on screen: smaller indents, and collapsed blocks packed to
 - A collapsed tool result shows its first 3 lines then `… +N lines` (`render.py:314-317`).
 
 ## Desired Behaviour
-- Every nested indent is one space, like the prompt's `> `: the elbow is ` ⎿ `, thinking and
-  note bodies and usage rows indent 1, the usage head is ` · `.
+- Every nested indent is one space, like the prompt's `> `: the elbow is ` ⎿ ` and note
+  bodies indent 1.
 - A collapsed block has no blank line after it; an expanded one keeps it.
 - A collapsed result shows only `… +N lines` (`… +1 line`, `(no output)` when empty). A
-  collapsed Read's `Read N lines` and an Edit's summary stay. The command under `• Bash`
-  keeps its 3-line preview.
-- `y` still copies without the markers.
+  collapsed Read's `Read N lines` and an Edit's summary stay. A Bash command keeps its
+  3-line preview.
+- The cursor gutter is one column: `▌` on the cursor block, a space elsewhere.
+- A Bash call reads `$ <command>`, the `$` in the dot's color, continuation lines under the
+  command. Thinking and usage lines start with the dot: `• Thinking…`, `• <model> · …`.
+- `y` still copies without the markers, `$ ` included.
 
 ## Design
 ### 1. Constants and one condition

@@ -23,9 +23,9 @@ None open.
 - [Usage Shown By Default](issues/open-enh-UsageShownByDefault.md)
     - Test: no usage lines on open; `U` shows them; `--usage` shows them from the start.
 - [Status Line Crowded](issues/open-enh-StatusLineCrowded.md)
-    - Test: the status line reads as asked; `?` opens the help with filter, usage and times; Esc, `q` or `?` closes it.
+    - Test: the status line reads as asked; `?` expands the help at the bottom with filter, usage, times and scrollbar; Esc, `q` or `?` closes it; `ctrl+s` toggles the scrollbar, off at start.
 - [Blocks Too Spaced](issues/open-enh-BlocksTooSpaced.md)
-    - Test: ` ⎿ ` elbow; a run of collapsed calls has no blank lines; a collapsed result shows only `… +N lines`; `y` copies without markers.
+    - Test: one-column `▌` gutter; Bash reads `$ <command>` with a colored `$`; `• Thinking…` and `• <usage>`; ` ⎿ ` elbow; a run of collapsed calls has no blank lines; a collapsed result shows only `… +N lines`; `y` copies without markers.
 
 ## back-burner:
 

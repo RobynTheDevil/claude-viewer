@@ -14,8 +14,7 @@ from textual.binding import Binding
 from textual.geometry import Size
 from textual.message import Message
 from textual.reactive import reactive
-from textual.containers import VerticalScroll
-from textual.screen import ModalScreen, Screen
+from textual.screen import Screen
 from textual.scroll_view import ScrollView
 from textual.strip import Strip
 from textual.widgets import Input, OptionList, Static
@@ -36,9 +35,9 @@ from claude_viewer.selection import (
 )
 from claude_viewer.transcript import Block, Session, SessionInfo, parse
 
-GUTTER = 2
-CURSOR = Segment("▌ ", Style(color="cyan", bold=True))
-PLAIN = Segment("  ")
+GUTTER = 1
+CURSOR = Segment("▌", Style(color="cyan", bold=True))
+PLAIN = Segment(" ")
 FILTERS = ("all", "read-only", "changes")
 MATCH = Style(bgcolor="#5f4b00")
 CURRENT_MATCH = Style(bgcolor="#d7af00", color="black")
@@ -77,10 +76,15 @@ class TranscriptView(ScrollView, can_focus=True):
     TranscriptView {
         overflow-x: hidden;
         scrollbar-gutter: stable;
+        scrollbar-size-vertical: 0;
+    }
+    TranscriptView.scrollbar {
+        scrollbar-size-vertical: 1;
     }
     """
 
     BINDINGS = [
+        Binding("ctrl+s", "scrollbar", "Scrollbar", show=False),
         Binding("j,down", "caret(1)", "Line down", show=False),
         Binding("k,up", "caret(-1)", "Line up", show=False),
         Binding("h,left", "column(-1)", "Left", show=False),
@@ -208,6 +212,14 @@ class TranscriptView(ScrollView, can_focus=True):
         self.refresh()
 
     def on_resize(self, event: events.Resize) -> None:
+        self._reflow()
+
+    def action_scrollbar(self) -> None:
+        self.toggle_class("scrollbar")
+        self.call_after_refresh(self._reflow)
+        self.post_message(self.Notice("scrollbar shown" if self.has_class("scrollbar") else "scrollbar hidden"))
+
+    def _reflow(self) -> None:
         if self.blocks:
             anchor = self.cursor
             row = self._offsets[anchor] - self.scroll_offset.y if self._offsets else 0
@@ -631,6 +643,14 @@ class SessionScreen(Screen):
         border: none;
         padding: 0;
     }
+    SessionScreen #help {
+        display: none;
+        height: auto;
+        max-height: 60%;
+        overflow-y: auto;
+        padding: 0 1;
+        border-top: solid $panel-lighten-2;
+    }
     SessionScreen #find {
         display: none;
         height: 1;
@@ -646,7 +666,6 @@ class SessionScreen(Screen):
         Binding("N", "next_match(-1)", "Previous match", show=False),
         Binding("q", "close", "Back"),
         Binding("escape", "escape", "Back", show=False),
-        Binding("question_mark", "help", "Help", show=False),
     ]
 
     def __init__(self, session: Session, standalone: bool, show_usage: bool = False) -> None:
@@ -663,6 +682,7 @@ class SessionScreen(Screen):
         yield Static(title, id="title")
         yield TranscriptView(self.session.blocks, show_usage=self.show_usage, id="view")
         yield SessionList(id="outline")
+        yield Static("", id="help")
         yield Static("", id="status")
         yield Input(placeholder="find", id="find")
 
@@ -767,11 +787,29 @@ class SessionScreen(Screen):
             self._close_outline()
             self.view.go_prompt(event.option_index)
 
+    @property
+    def help(self) -> Static:
+        return self.query_one("#help", Static)
+
+    def on_key(self, event: events.Key) -> None:
+        if event.character == "?" and not isinstance(self.focused, Input):
+            event.stop()
+            event.prevent_default()
+            self.action_help()
+
     def action_help(self) -> None:
+        help = self.help
+        if help.display:
+            help.display = False
+            return
         view = self.view
-        self.app.push_screen(HelpScreen(view.filter, view.show_usage, view.show_times))
+        help.update(help_text(view.filter, view.show_usage, view.show_times, view.has_class("scrollbar")))
+        help.display = True
 
     def action_escape(self) -> None:
+        if self.help.display:
+            self.help.display = False
+            return
         if self.outline.display:
             self._close_outline()
             return
@@ -782,7 +820,9 @@ class SessionScreen(Screen):
 
     def action_close(self) -> None:
         find = self.query_one("#find", Input)
-        if self.outline.display:
+        if self.help.display:
+            self.help.display = False
+        elif self.outline.display:
             self._close_outline()
         elif find.display:
             find.display = False
@@ -813,55 +853,28 @@ HELP_KEYS = (
     ("/  n / N", "find by regular expression, next and previous match"),
     ("esc", "leave visual mode, clear matches, else back to the list"),
     ("q", "leave visual mode, else back to the list"),
-    ("?", "this help"),
+    ("ctrl+s", "show or hide the scrollbar"),
+    ("?", "show or hide this help"),
     ("ctrl+c", "quit"),
 )
 
 
-class HelpScreen(ModalScreen):
-    DEFAULT_CSS = """
-    HelpScreen {
-        align: center middle;
-    }
-    HelpScreen VerticalScroll {
-        width: auto;
-        max-width: 100%;
-        height: auto;
-        max-height: 100%;
-        background: $panel;
-        padding: 0 1;
-    }
-    """
-
-    BINDINGS = [
-        Binding("escape,q,question_mark", "dismiss", "Close", show=False),
-        Binding("j,down", "scroll(1)", show=False),
-        Binding("k,up", "scroll(-1)", show=False),
-    ]
-
-    def __init__(self, filter: str, usage: bool, times: bool) -> None:
-        super().__init__()
-        self.state = (filter, usage, times)
-
-    def compose(self) -> ComposeResult:
-        filter, usage, times = self.state
-        text = Text()
-        text.append("filter ", "bold")
-        text.append(filter)
-        text.append("   usage ", "bold")
-        text.append("shown" if usage else "hidden")
-        text.append("   times ", "bold")
-        text.append("shown" if times else "hidden")
-        width = max(len(key) for key, _ in HELP_KEYS)
-        for key, action in HELP_KEYS:
-            text.append("\n")
-            text.append(key.ljust(width + 2), "cyan")
-            text.append(action)
-        with VerticalScroll():
-            yield Static(text)
-
-    def action_scroll(self, step: int) -> None:
-        self.query_one(VerticalScroll).scroll_relative(y=step, animate=False)
+def help_text(filter: str, usage: bool, times: bool, scrollbar: bool) -> Text:
+    text = Text()
+    text.append("filter ", "bold")
+    text.append(filter)
+    text.append("   usage ", "bold")
+    text.append("shown" if usage else "hidden")
+    text.append("   times ", "bold")
+    text.append("shown" if times else "hidden")
+    text.append("   scrollbar ", "bold")
+    text.append("shown" if scrollbar else "hidden")
+    width = max(len(key) for key, _ in HELP_KEYS)
+    for key, action in HELP_KEYS:
+        text.append("\n")
+        text.append(key.ljust(width + 2), "cyan")
+        text.append(action)
+    return text
 
 
 class SessionList(OptionList):

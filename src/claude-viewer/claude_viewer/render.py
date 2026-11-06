@@ -27,6 +27,7 @@ PREVIEW_LINES = 3
 
 DOT = "⏺ "
 TOOL_DOT = "• "
+SHELL_PROMPT = "$ "
 ELBOW = " ⎿ "
 PROMPT_STYLE = "on grey15"
 ADD_STYLE = "on #16351f"
@@ -268,9 +269,11 @@ def tool_header(block: Block, suffix: str = "") -> Table:
         style = "dim"
     else:
         style = "yellow" if is_write(block) else "cyan"
+    lines = command_lines(block)
+    if lines is not None and block.tool == "Bash":
+        return marked(SHELL_PROMPT, "bold " + style, command_text(block, lines, suffix))
     text = Text()
     text.append(tool_label(block), "bold " + ("yellow" if is_write(block) else "cyan"))
-    lines = command_lines(block)
     if lines is None:
         arg = tool_arg(block)
         if arg:
@@ -278,13 +281,23 @@ def tool_header(block: Block, suffix: str = "") -> Table:
         text.append(suffix, style="dim")
         return marked(TOOL_DOT, style, text)
     text.append(suffix, style="dim")
+    text.append("\n")
+    text.append_text(command_text(block, lines))
+    return marked(TOOL_DOT, style, text)
+
+
+def command_text(block: Block, lines: list[str], suffix: str = "") -> Text:
     shown = lines if not block.collapsed else lines[:PREVIEW_LINES]
-    for line in highlight_command(lines, block.tool)[: len(shown)]:
-        text.append("\n")
+    text = Text()
+    for n, line in enumerate(highlight_command(lines, block.tool)[: len(shown)]):
+        if n:
+            text.append("\n")
         text.append_text(line)
+        if n == 0:
+            text.append(suffix, style="dim")
     if len(lines) > len(shown):
         text.append(f"\n… +{len(lines) - len(shown)} lines", style="dim")
-    return marked(TOOL_DOT, style, text)
+    return text
 
 
 def output(text: str, style: str = "") -> Text:
@@ -361,16 +374,16 @@ def render_block(block: Block, show_times: bool = False) -> RenderableType:
     if block.kind == "tool":
         return Group(tool_header(block, suffix), tool_body(block))
     if block.kind == "thinking":
-        head = Text("✻ Thinking…", style="dim italic")
+        head = Text("Thinking…", style="dim italic")
         if block.collapsed:
-            return head
-        return Group(head, marked(" ", "", Text(block.text, style="dim italic")))
+            return marked(TOOL_DOT, "dim", head)
+        return marked(TOOL_DOT, "dim", Group(head, Text(block.text, style="dim italic")))
     if block.kind == "usage":
-        head = Text(" · " + usage_summary(block), style="dim")
+        head = Text(usage_summary(block), style="dim")
         if block.collapsed:
-            return head
+            return marked(TOOL_DOT, "dim", head)
         rows = Text("\n".join(f"{k}: {v}" for k, v in (block.usage or {}).items() if isinstance(v, (int, str))), style="dim")
-        return Group(head, marked(" ", "", rows))
+        return marked(TOOL_DOT, "dim", Group(head, rows))
     if block.kind == "image":
         return marked(ELBOW, "dim", Text(block.text, style="dim"))
     if block.kind == "note":
