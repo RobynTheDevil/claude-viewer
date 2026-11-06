@@ -9,8 +9,8 @@ from rich.style import Style
 from textual.strip import Strip
 
 CLIP_EXE = "/mnt/c/Windows/system32/clip.exe"
-MARKERS = ("⏺ ", "• ", "  ⎿  ")
-MARKER_WIDTH = {"text": 2, "tool": 5, "thinking": 2, "usage": 4, "note": 2, "image": 5}
+MARKERS = ("⏺ ", "• ", " ⎿ ")
+MARKER_WIDTH = {"text": 2, "tool": 3, "thinking": 1, "usage": 1, "note": 1, "image": 3}
 
 
 def cell_to_index(text: str, cell: int) -> int:

@@ -59,7 +59,8 @@ record kind the parser handles.
 |---|---|
 | Command | `claude-viewer` |
 | Opening | No argument: a picker of the current directory's project sessions, like `/resume`; `--all` lists every project. A session ID, ID prefix or `.jsonl` path opens that session. |
-| Default view | Prompts and replies in full, each tool call on one line with its output collapsed, file-edit diffs open. |
+| Default view | Prompts and replies in full, each tool call on one line with its output collapsed to `… +N lines`, file-edit diffs open. |
+| Spacing | A blank line after an expanded block, none after a collapsed one. Nested lines indent one cell, like the prompt's `> `: the result elbow is ` ⎿ `. |
 | Commands | On the lines under `• Bash`, never cut at a width. Collapsed shows up to 3 lines then `… +N lines`; expanded shows all of it. |
 | Command colors | `shell.py` colors each simple command's name, flags, strings, variables, operators and redirects; Pygments' Bash lexer colors only builtins and reads a mid-word `#` as a comment. A heredoc body in its own language: the interpreter it feeds (`python3 - <<EOF`) or the suffix of the file it is written to (`cat > a.rs <<EOF`). |
 | Read or write | The dot and tool name are cyan for a read and yellow for a write; the dot is red on an error and dim with no result. |
@@ -104,7 +105,7 @@ the caret on the cursor block's first line. The caret and the selection are draw
 `render_line`.
 
 `y` copies the selection as drawn, a wrapped line as its own line, without the gutter or
-the `⏺ ` and `  ⎿  ` markers and with trailing spaces removed. Rendered Markdown copies
+the `⏺ `, `• ` and ` ⎿ ` markers and with trailing spaces removed. Rendered Markdown copies
 with its bullets and indentation. The text goes to `App.copy_to_clipboard` (OSC 52) and,
 under WSL, to `clip.exe` as UTF-16 LE with CRLF line ends and no BOM, since `clip.exe`
 pastes a BOM as a character.
@@ -120,8 +121,8 @@ by anything else, or by nothing for 1 s, does nothing.
 **Hidden blocks take no lines.** The filter and the usage toggle set `TranscriptView.shown`;
 a hidden block's strips are empty, so `bisect_right` over the offsets lands on the visible
 block after a run of hidden ones. Motions, search and `O`/`X`/`E`/`C` skip hidden blocks, and
-the blank line after a block depends on the next shown one, so a change of visibility clears
-the whole cache. A call is a change when `access.is_write` says so: it has a `structuredPatch`, is an
+the blank line after an expanded block is left out when a usage line follows, so a change of
+visibility clears the whole cache. `render.spaced` decides the blank for the view and `--print`. A call is a change when `access.is_write` says so: it has a `structuredPatch`, is an
 Edit, Write or NotebookEdit, or is a shell command that writes. A command counts as a write
 unless every simple command in it is a known reader, so an unknown program is a write. Prompts and replies show under every filter,
 thinking and notes only under all, and a usage line only while a block of its message shows.

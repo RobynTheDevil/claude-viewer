@@ -23,7 +23,7 @@ from textual.widgets.option_list import Option
 
 from claude_viewer.access import is_write
 from claude_viewer.editor import editor_command, file_target, local_path
-from claude_viewer.render import header_plain, render_block
+from claude_viewer.render import header_plain, render_block, spaced
 from claude_viewer.selection import (
     cell_to_index,
     first_nonblank,
@@ -187,7 +187,7 @@ class TranscriptView(ScrollView, can_focus=True):
                 lines = console.render_lines(render_block(self.blocks[i], self.show_times), options, pad=False)
                 strips = [Strip(line) for line in lines]
                 following = self._next_visible(i, 1)
-                if following is None or self.blocks[following].kind != "usage":
+                if spaced(self.blocks[i]) and (following is None or self.blocks[following].kind != "usage"):
                     strips.append(Strip.blank(0))
             self._cache[i] = strips
         return strips

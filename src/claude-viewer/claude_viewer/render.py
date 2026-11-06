@@ -27,7 +27,7 @@ PREVIEW_LINES = 3
 
 DOT = "⏺ "
 TOOL_DOT = "• "
-ELBOW = "  ⎿  "
+ELBOW = " ⎿ "
 PROMPT_STYLE = "on grey15"
 ADD_STYLE = "on #16351f"
 DEL_STYLE = "on #3d1a1d"
@@ -311,10 +311,10 @@ def tool_body(block: Block) -> RenderableType:
         return marked(ELBOW, "dim", output("\n".join(lines) or "(no output)", style))
     if block.tool == "Read" and not block.is_error:
         return marked(ELBOW, "dim", Text(f"Read {len(lines)} lines", style="dim"))
-    preview = output("\n".join(lines[:PREVIEW_LINES]) or "(no output)", style)
-    if len(lines) > PREVIEW_LINES:
-        preview.append(f"\n… +{len(lines) - PREVIEW_LINES} lines", style="dim")
-    return marked(ELBOW, "dim", preview)
+    if not lines:
+        return marked(ELBOW, "dim", Text("(no output)", style="dim"))
+    count = f"… +{len(lines)} line{'s' * (len(lines) != 1)}"
+    return marked(ELBOW, "dim", Text(count, style=style or "dim"))
 
 
 def span_label(seconds: float) -> str:
@@ -342,6 +342,10 @@ def time_suffix(block: Block) -> str:
     return "  " + " ".join(parts) if parts else ""
 
 
+def spaced(block: Block) -> bool:
+    return not (block.collapsible and block.collapsed)
+
+
 def render_block(block: Block, show_times: bool = False) -> RenderableType:
     suffix = time_suffix(block) if show_times and block.kind in ("prompt", "tool") else ""
     if block.kind == "prompt":
@@ -360,13 +364,13 @@ def render_block(block: Block, show_times: bool = False) -> RenderableType:
         head = Text("✻ Thinking…", style="dim italic")
         if block.collapsed:
             return head
-        return Group(head, marked("  ", "", Text(block.text, style="dim italic")))
+        return Group(head, marked(" ", "", Text(block.text, style="dim italic")))
     if block.kind == "usage":
-        head = Text("  · " + usage_summary(block), style="dim")
+        head = Text(" · " + usage_summary(block), style="dim")
         if block.collapsed:
             return head
         rows = Text("\n".join(f"{k}: {v}" for k, v in (block.usage or {}).items() if isinstance(v, (int, str))), style="dim")
-        return Group(head, marked("    ", "", rows))
+        return Group(head, marked(" ", "", rows))
     if block.kind == "image":
         return marked(ELBOW, "dim", Text(block.text, style="dim"))
     if block.kind == "note":
@@ -374,7 +378,7 @@ def render_block(block: Block, show_times: bool = False) -> RenderableType:
         head = Text("※ " + lines[0], style="dim")
         if block.collapsed or len(lines) == 1:
             return head
-        return Group(head, marked("  ", "", Text("\n".join(lines[1:]), style="dim")))
+        return Group(head, marked(" ", "", Text("\n".join(lines[1:]), style="dim")))
     return Text(block.text)
 
 
@@ -382,8 +386,11 @@ def print_session(session: Session, console: Console | None = None, usage: bool 
     console = console or Console()
     console.print(Text(session.title, style="bold"))
     console.print(Text(session.session_id, style="dim"))
+    previous = None
     for block in session.blocks:
         if block.kind == "usage" and not usage:
             continue
-        console.print()
+        if previous is None or spaced(previous):
+            console.print()
         console.print(render_block(block))
+        previous = block

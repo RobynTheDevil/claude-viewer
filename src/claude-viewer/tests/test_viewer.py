@@ -9,7 +9,7 @@ from textual.widgets import Static
 from claude_viewer.app import HelpScreen, TranscriptView, ViewerApp
 from claude_viewer.cli import main
 from claude_viewer.export import to_markdown
-from claude_viewer.render import print_session
+from claude_viewer.render import print_session, spaced
 from claude_viewer.transcript import list_sessions, parse, project_dir_for, session_title
 
 
@@ -47,7 +47,7 @@ def test_print_shows_default_view(transcript):
     text = out.getvalue()
     assert "> Please fix the widget" in text
     assert re.search(r"• Bash *\n  ls -la", text)
-    assert "… +2 lines" in text
+    assert " ⎿ … +5 lines" in text
     assert "• Update(/w/widget.py)" in text
     assert "+x = 2" in text
     assert "secret" not in text and "Skill body" not in text and "sidechain" not in text
@@ -92,6 +92,7 @@ def test_ansi_output_is_styled_not_raw(transcript):
     session = parse(transcript)
     bash = session.blocks[3]
     bash.result = "\x1b[33mc88c155\x1b[m first commit"
+    bash.collapsed = False
     out = io.StringIO()
     print_session(session, Console(file=out, width=100, color_system=None))
     assert "c88c155 first commit" in out.getvalue() and "[33m" not in out.getvalue()
@@ -137,7 +138,8 @@ def test_caret_columns_and_words():
     assert next_word(text, 0) == 2 and next_word(text, 2) == 6 and next_word(text, 6) == 7
     assert prev_word(text, 7) == 6 and prev_word(text, 6) == 2
     assert first_nonblank("     line 3") == 5
-    assert marker_len("tool", "  ⎿  out") == 5 and marker_len("tool", "     more") == 5
+    assert marker_len("tool", " ⎿ out") == 3 and marker_len("tool", "   more") == 3
+    assert marker_len("tool", "     more") == 3
     assert marker_len("text", "⏺ Fixed") == 2 and marker_len("prompt", "> hi") == 0
 
 
@@ -245,9 +247,9 @@ def test_usage_toggle_and_flag(transcript, capsys):
         await pilot.press("U")
         assert not any(view.shown[i] for i in usage)
         assert all(view._strips(i) == [] for i in usage)
-        assert view.virtual_size.height == before - len(usage)
+        assert view.virtual_size.height == sum(len(view._strips(i)) for i in range(len(view.blocks))) < before
         for i in range(len(view.blocks)):
-            if view.shown[i]:
+            if view.shown[i] and spaced(view.blocks[i]):
                 assert view._strips(i)[-1].cell_length == 0
         for _ in range(12):
             await pilot.press("right_curly_bracket")
@@ -546,7 +548,7 @@ def test_command_header_full_when_expanded():
     short = Block("tool", tool="Bash", input={"command": "ls\npwd"}, result="ok")
     with console.capture() as cap:
         console.print(render_block(short))
-    assert "…" not in cap.get()
+    assert cap.get().count("…") == 1 and "… +1 line\n" in cap.get()
 
 
 def test_command_languages():
