@@ -1,5 +1,13 @@
 # claude-viewer: changelog
 
+## 0.2.0 (2026-11-06)
+
+### Added
+
+- Compact layout: one-cell indents and gutter, `$` for Bash, `> N lines`, new open defaults ([report](issues/done/done-enh-BlocksTooSpaced.md))
+- Short status line, `?` help panel, `ctrl+s` scrollbar, Bash read/write groups ([report](issues/done/done-enh-StatusLineCrowded.md))
+- Token usage hidden by default; `--usage` or `U` shows it ([report](issues/done/done-enh-UsageShownByDefault.md))
+
 ## 0.1.1 (2026-11-06)
 
 ### Changed
