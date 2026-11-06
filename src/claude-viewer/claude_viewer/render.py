@@ -10,7 +10,8 @@ from pygments.lexer import Lexer
 from pygments.lexers import get_lexer_by_name, get_lexer_for_filename
 from pygments.lexers.special import TextLexer
 from pygments.util import ClassNotFound
-from rich.console import Console, Group, RenderableType
+from rich.cells import cell_len
+from rich.console import Console, ConsoleOptions, Group, RenderableType, RenderResult
 from rich.markdown import Markdown
 from rich.style import Style
 from rich.syntax import Syntax
@@ -103,10 +104,32 @@ def usage_summary(block: Block) -> str:
     return " · ".join(parts)
 
 
+class Folded:
+    def __init__(self, text: Text) -> None:
+        self.text = text
+
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        width = max(1, options.max_width)
+        for line in self.text.split("\n", allow_blank=True):
+            cuts = []
+            used = 0
+            for i, ch in enumerate(line.plain):
+                w = cell_len(ch)
+                if used + w > width:
+                    cuts.append(i)
+                    used = 0
+                used += w
+            for piece in line.divide(cuts) if cuts else [line]:
+                piece.no_wrap = True
+                piece.overflow = "crop"
+                piece.end = "\n"
+                yield piece
+
+
 def marked(marker: str, marker_style: str, body: RenderableType) -> Table:
     grid = Table.grid()
     grid.add_column(width=len(marker), no_wrap=True)
-    grid.add_column(ratio=1)
+    grid.add_column(ratio=1, overflow="fold")
     grid.add_row(Text(marker, style=marker_style), body)
     return grid
 
@@ -271,7 +294,7 @@ def tool_header(block: Block, suffix: str = "") -> Table:
         style = "yellow" if is_write(block) else "cyan"
     lines = command_lines(block)
     if lines is not None and block.tool == "Bash":
-        return marked(SHELL_PROMPT, "bold " + style, command_text(block, lines, suffix))
+        return marked(SHELL_PROMPT, "bold " + style, Folded(command_text(block, lines, suffix)))
     text = Text()
     text.append(tool_label(block), "bold " + ("yellow" if is_write(block) else "cyan"))
     if lines is None:
@@ -283,7 +306,7 @@ def tool_header(block: Block, suffix: str = "") -> Table:
     text.append(suffix, style="dim")
     text.append("\n")
     text.append_text(command_text(block, lines))
-    return marked(TOOL_DOT, style, text)
+    return marked(TOOL_DOT, style, Folded(text))
 
 
 def command_text(block: Block, lines: list[str], suffix: str = "") -> Text:

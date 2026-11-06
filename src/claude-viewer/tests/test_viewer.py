@@ -611,6 +611,20 @@ def test_status_line_and_help(transcript):
     run_view(transcript, script, size=(120, 40))
 
 
+def test_long_command_folds_by_character():
+    from claude_viewer.render import render_block
+    from claude_viewer.transcript import Block
+    command = 'grep -n "' + "a\\|" * 40 + 'z" src/x.rs'
+    block = Block("tool", tool="Bash", input={"command": command}, result="ok")
+    console = Console(width=60, file=io.StringIO(), color_system=None)
+    with console.capture() as cap:
+        console.print(render_block(block))
+    lines = cap.get().splitlines()
+    assert lines[0].startswith('$ grep -n "a\\|') and len(lines[0]) == 60
+    assert "…" not in cap.get()
+    assert "".join(line[2:] for line in lines[:-1]).rstrip() == command
+
+
 def test_shell_groups_split_by_access():
     from claude_viewer.transcript import Block
     read = Block("tool", tool="Bash", input={"command": "git status"})

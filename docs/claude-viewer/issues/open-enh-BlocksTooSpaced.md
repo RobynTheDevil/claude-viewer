@@ -22,7 +22,9 @@ Fit more of a session on screen: smaller indents, and collapsed blocks packed to
 - A Bash call reads `$ <command>`, the `$` in the dot's color, continuation lines under the
   command. Replies, thinking and usage start with the dot, white for a reply and thinking:
   `• Thinking…`, `• <model> · …`. `⏺` read as `@` in Robyn's font.
-- A tool's argument wraps instead of being cut at 100 characters with `…`.
+- A tool's argument wraps instead of being cut at 100 characters with `…`. A command folds
+  at the window edge by character, so `grep -n "long|pattern"` keeps the pattern on the
+  `$` line and nothing is cut.
 - `y` still copies without the markers, `$ ` included.
 
 ## Design
