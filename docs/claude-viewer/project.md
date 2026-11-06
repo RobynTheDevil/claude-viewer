@@ -60,13 +60,13 @@ record kind the parser handles.
 |---|---|
 | Command | `claude-viewer` |
 | Opening | No argument: a picker of the current directory's project sessions, like `/resume`; `--all` lists every project. A session ID, ID prefix or `.jsonl` path opens that session. |
-| Default view | Prompts and replies in full, each tool call on one line with its output collapsed to `> N lines`, level with a command's `$`, file-edit diffs open. Replies, tool calls, thinking and usage start with a `• ` dot; a reply's and thinking's are white. |
-| Spacing | A blank line after an expanded block, none after a collapsed one. Nested lines indent one cell, like the prompt's `> `: the result elbow is ` ⎿ `. The cursor gutter is one column, `▌` beside the cursor block. |
+| Default view | Everything open except Read calls, attachments and usage lines. A collapsed call's output is `> N lines`, level with a command's `$`; a collapsed Read says `Read N lines`. Replies, tool calls, thinking and usage start with a `• ` dot; a reply's and thinking's are white. |
+| Spacing | A blank line after an expanded block and after every shell call; none after a collapsed one or an attachment. Nested lines indent one cell, like the prompt's `> `: the result elbow is ` ⎿ `. The cursor gutter is one column, `▌` beside the cursor block. |
 | Commands | A Bash call reads `$ <command>`, the `$` in the dot's color; other shells' commands sit on the lines under `• PowerShell`. Neither a command nor another tool's argument is cut at a width. A command wraps at spaces, and a word too long for a whole line is split at the edge by character so it starts where it stands (`render.wrap_cuts`). Rich's own wrap moves such a word to its own line and the grid crops it with `…`. Collapsed shows up to 3 lines then `… +N lines`; expanded shows all of it. |
 | Command colors | `shell.py` colors each simple command's name, flags, strings, variables, operators and redirects; Pygments' Bash lexer colors only builtins and reads a mid-word `#` as a comment. A heredoc body in its own language: the interpreter it feeds (`python3 - <<EOF`) or the suffix of the file it is written to (`cat > a.rs <<EOF`). |
 | Read or write | The dot and tool name are cyan for a read and yellow for a write; the dot is red on an error and dim with no result. |
 | Similar calls | Calls to the same tool: every Read, every Edit. Shell calls split by `access.is_write` into `Bash read` and `Bash write`. `O`/`X` act on them together, and the status line names the group. |
-| Shown collapsed | Thinking blocks as `• Thinking…`, attachments (one line with the file name). |
+| Attachments | Kind `attachment`: one line, the file name or `[Image]`, nothing to expand. |
 | Hidden until asked | Per-message token usage and model, a dim `• ` line: `U` or `--usage`. The scrollbar: `ctrl+s`. |
 | Not shown | System reminders, `isMeta` text, subagent turns. |
 

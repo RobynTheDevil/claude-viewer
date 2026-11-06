@@ -162,7 +162,7 @@ class _Parser:
         if att.get("type") not in ATTACHMENT_KINDS:
             return
         name = att.get("filename") or att.get("path") or att.get("displayPath") or att.get("type")
-        self.blocks.append(Block("image", text=f"Attached {name}"))
+        self.blocks.append(Block("attachment", text=f"Attached {name}"))
 
     def assistant(self, rec: dict) -> None:
         msg = rec.get("message") or {}
@@ -178,7 +178,7 @@ class _Parser:
             if t == "text" and item.get("text", "").strip():
                 self.blocks.append(Block("text", text=item["text"].strip(), msg_id=msg_id, collapsed=False))
             elif t == "thinking" and item.get("thinking", "").strip():
-                self.blocks.append(Block("thinking", text=item["thinking"].strip(), msg_id=msg_id))
+                self.blocks.append(Block("thinking", text=item["thinking"].strip(), msg_id=msg_id, collapsed=False))
             elif t in ("tool_use", "server_tool_use"):
                 block = Block(
                     "tool",
@@ -186,6 +186,7 @@ class _Parser:
                     tool_id=item.get("id", ""),
                     input=item.get("input") or {},
                     msg_id=msg_id,
+                    collapsed=item.get("name") == "Read",
                 )
                 self.tools[block.tool_id] = block
                 self.blocks.append(block)
@@ -207,7 +208,7 @@ class _Parser:
             elif t == "text":
                 texts.append(item.get("text", ""))
             elif t == "image":
-                self.blocks.append(Block("image", text="[Image]"))
+                self.blocks.append(Block("attachment", text="[Image]"))
         if not texts:
             return
         raw = "\n".join(texts)
@@ -215,13 +216,13 @@ class _Parser:
         if stdout:
             body = stdout.group(1).strip()
             if body:
-                self.blocks.append(Block("note", text=body))
+                self.blocks.append(Block("note", text=body, collapsed=False))
             return
         text = _prompt_text(raw)
         if not text:
             return
         if origin_kind not in (None, "human"):
-            self.blocks.append(Block("note", text=text))
+            self.blocks.append(Block("note", text=text, collapsed=False))
             return
         if not self.first_prompt:
             self.first_prompt = text

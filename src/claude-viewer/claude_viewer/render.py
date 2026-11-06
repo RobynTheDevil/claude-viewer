@@ -392,6 +392,10 @@ def time_suffix(block: Block) -> str:
 
 
 def spaced(block: Block) -> bool:
+    if block.kind == "attachment":
+        return False
+    if block.kind == "tool" and block.tool in SHELL_LEXERS:
+        return True
     return not (block.collapsible and block.collapsed)
 
 
@@ -420,7 +424,7 @@ def render_block(block: Block, show_times: bool = False) -> RenderableType:
             return marked(TOOL_DOT, "dim", head)
         rows = Text("\n".join(f"{k}: {v}" for k, v in (block.usage or {}).items() if isinstance(v, (int, str))), style="dim")
         return marked(TOOL_DOT, "dim", Group(head, rows))
-    if block.kind == "image":
+    if block.kind == "attachment":
         return marked(ELBOW, "dim", Text(block.text, style="dim"))
     if block.kind == "note":
         lines = block.text.splitlines() or [""]

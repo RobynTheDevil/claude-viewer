@@ -59,7 +59,7 @@ def block_markdown(block: Block) -> str:
         return details("Thinking", block.text)
     if block.kind == "usage":
         return f"<sub>{html.escape(usage_summary(block))}</sub>"
-    if block.kind == "image":
+    if block.kind == "attachment":
         return f"*{block.text}*"
     if block.kind == "note":
         lines = block.text.splitlines() or [""]
