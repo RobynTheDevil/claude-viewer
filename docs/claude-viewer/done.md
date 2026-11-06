@@ -8,6 +8,13 @@ An entry is one item: the line from the todo, compacted, with a link to its repo
 sentence on what the change was. Not the investigation, not the alternatives, not the rounds
 it took. This file is history and is not read as reference.
 
+- [x] Less paging keys. `d`/`u` half page, Space page down, `e` line down, `<`/`>` top and
+  bottom; usage moved to `U`.
+
+- [x] Only `ctrl+c` quits. `q` and Esc leave visual mode or go back to the list.
+
+- [x] Open and close keys. `o`/`x` expand and collapse the block, `O`/`X` its tool or kind.
+
 - [x] Timestamps. t shows prompt times, call durations and gaps over 5 s.
   ([report](issues/done/done-enh-Timestamps.md))
 
