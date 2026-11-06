@@ -5,6 +5,7 @@ import os
 import sys
 from pathlib import Path
 
+from claude_viewer import __version__
 from claude_viewer.transcript import all_project_dirs, find_session, list_sessions, parse, project_dir_for
 
 
@@ -18,6 +19,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("-p", "--print", dest="print_", action="store_true", help="print the default view to stdout and exit")
     parser.add_argument("-o", "--export", metavar="FILE", help="write the session as Markdown to FILE, or - for stdout")
     parser.add_argument("--usage", action=argparse.BooleanOptionalAction, default=False, help="show per-message token usage")
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s {__version__}")
     args = parser.parse_args(argv)
 
     path = None

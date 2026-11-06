@@ -1,6 +1,6 @@
 [project]
 name = "claude-viewer"
-version = "0.1.0"
+dynamic = ["version"]
 description = "View Claude Code session transcripts in the terminal"
 readme = "README.md"
 license = "MIT"
@@ -28,8 +28,12 @@ claude-viewer = "claude_viewer.cli:main"
 dev = ["pytest>=8"]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+raw-options = { root = "../..", git_describe_command = "git describe --dirty --tags --long --match v[0-9]*" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["claude_viewer"]

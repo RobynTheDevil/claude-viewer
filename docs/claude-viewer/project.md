@@ -174,6 +174,18 @@ because speed is not the limit at this data size:
 installs the package with `uv tool install --force --reinstall`. The command lands in
 `~/.local/bin/claude-viewer`. The build refuses while a copy is running, unless `--force`.
 
+## Release
+
+- **The version is the git tag.** `hatch-vcs` reads the latest `v*` tag from the repo root
+  (`raw-options.root = "../.."`), so the `v0.2.0` tag `wf land` makes is the package version
+  and nothing in the source is bumped. An untagged commit builds as
+  `0.2.1.devN+g<hash>`. `claude_viewer.__version__` and `--version` read the installed
+  metadata. A build outside a git checkout needs an sdist, which carries the version.
+- `uv build` in `src/claude-viewer` makes the sdist and wheel, MIT licensed, with
+  `README.md` as the long description.
+- `README.md` is for people installing the tool: install, use, keys. The repo's workflow,
+  build script and docs stay out of it.
+
 ## Open design decisions
 
 - **Confirmation.** Who confirms a change works, and how. Settles `confirm` in

@@ -53,6 +53,15 @@ def test_print_shows_default_view(transcript):
     assert "secret" not in text and "Skill body" not in text and "sidechain" not in text
 
 
+def test_version_flag(capsys):
+    import pytest
+    from claude_viewer import __version__
+    with pytest.raises(SystemExit):
+        main(["--version"])
+    assert capsys.readouterr().out.strip() == f"claude-viewer {__version__}"
+    assert __version__[0].isdigit()
+
+
 def test_markdown_export(transcript):
     md = to_markdown(parse(transcript))
     assert md.startswith("# Fix the widget")
