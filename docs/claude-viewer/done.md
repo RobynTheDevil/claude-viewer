@@ -8,6 +8,13 @@ An entry is one item: the line from the todo, compacted, with a link to its repo
 sentence on what the change was. Not the investigation, not the alternatives, not the rounds
 it took. This file is history and is not read as reference.
 
+- [x] Commands show in full: `…` only past 3 lines, none once expanded.
+
+- [x] Commands drawn under `• Bash`, syntax-colored, heredoc bodies in their own language.
+
+- [x] Read and write indicators: cyan tool name for a read, yellow for a write; `f` changes
+  uses the same rule.
+
 - [x] Less paging keys. `d`/`u` half page, Space page down, `e` line down, `<`/`>` top and
   bottom; usage moved to `U`.
 
