@@ -23,7 +23,7 @@ def test_parse_orders_blocks_and_pairs_results(transcript):
     prompts = [b.text for b in session.blocks if b.kind == "prompt"]
     assert prompts == ["/startup bobbins", "Please fix the widget"]
     bash = session.blocks[3]
-    assert bash.result == "a\nb\nc\nd\ne" and not bash.collapsed and not session.blocks[2].collapsed
+    assert bash.result == "a\nb\nc\nd\ne" and bash.collapsed and not session.blocks[2].collapsed
     edit = session.blocks[5]
     assert edit.patch and not edit.collapsed
     assert session.blocks[4].usage["output_tokens"] == 40
@@ -47,7 +47,7 @@ def test_print_shows_default_view(transcript):
     assert "> Please fix the widget" in text
     assert re.search(r"^\$ ls -la *$", text, re.M)
     assert "• Thinking…" in text
-    assert re.search(r"^ ⎿ a *\n *b *\n", text, re.M)
+    assert re.search(r"^> 5 lines *$", text, re.M)
     assert "• Update(/w/widget.py)" in text
     assert "+x = 2" in text
     assert "secret" not in text and "Skill body" not in text and "sidechain" not in text
@@ -76,8 +76,8 @@ def test_view_toggles_and_groups(transcript):
             assert blocks[view.cursor].tool == "Bash"
             before = view.virtual_size.height
             await pilot.press("enter")
-            assert blocks[3].collapsed
-            assert view.virtual_size.height < before
+            assert not blocks[3].collapsed
+            assert view.virtual_size.height > before
             await pilot.press("C")
             assert all(b.collapsed for b in blocks if b.collapsible)
             await pilot.press("right_curly_bracket", "right_curly_bracket", "O")
@@ -151,7 +151,7 @@ def test_visual_line_yank(long_transcript, monkeypatch):
     async def script(app, view, pilot):
         bash = next(i for i, b in enumerate(view.blocks) if b.kind == "tool")
         view.action_jump(bash)
-        await pilot.press("j", "V", "j", "j")
+        await pilot.press("enter", "j", "V", "j", "j")
         assert view.mode == "line"
         assert "VISUAL LINE" in str(app.screen.query_one("#status").render())
         await pilot.press("y")
@@ -636,6 +636,10 @@ def test_wrap_cuts_prefer_word_boundaries():
 def test_spacing_by_kind():
     from claude_viewer.transcript import Block
     assert spaced(Block("tool", tool="Bash", collapsed=True))
+    from claude_viewer.transcript import starts_collapsed
+    assert starts_collapsed(Block("tool", tool="Bash", input={"command": "ls -la"}))
+    assert not starts_collapsed(Block("tool", tool="Bash", input={"command": "rm x"}))
+    assert not starts_collapsed(Block("tool", tool="Grep", input={"pattern": "x"}))
     assert not spaced(Block("tool", tool="Read", collapsed=True))
     assert spaced(Block("tool", tool="Read", collapsed=False))
     assert not spaced(Block("attachment", text="Attached a.png"))

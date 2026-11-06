@@ -15,7 +15,8 @@ Fit more of a session on screen: smaller indents, and collapsed blocks packed to
   bodies indent 1.
 - A collapsed block has no blank line after it and an expanded one keeps it, except that a
   shell call always keeps it and an attachment never has one.
-- On open, Read calls, attachments and usage lines are collapsed and everything else is open.
+- On open, Read calls, read-only shell calls, attachments and usage lines are collapsed and
+  everything else is open.
 - The `image` kind is `attachment`, since it also covers files, PDFs and directories.
 - A collapsed result shows only `> N lines` at column 0, level with a command's `$`
   (`> 1 line`, `> no output` when empty). A

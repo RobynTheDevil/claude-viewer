@@ -65,6 +65,11 @@ class Block:
         return self.kind in {"tool", "thinking", "usage", "note"}
 
 
+def starts_collapsed(block: Block) -> bool:
+    from claude_viewer.access import SHELL_TOOLS, is_write
+    return block.tool == "Read" or (block.tool in SHELL_TOOLS and not is_write(block))
+
+
 @dataclass
 class Session:
     path: Path
@@ -186,8 +191,8 @@ class _Parser:
                     tool_id=item.get("id", ""),
                     input=item.get("input") or {},
                     msg_id=msg_id,
-                    collapsed=item.get("name") == "Read",
                 )
+                block.collapsed = starts_collapsed(block)
                 self.tools[block.tool_id] = block
                 self.blocks.append(block)
 
